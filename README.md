@@ -1,41 +1,41 @@
 # Symphony (symphifo)
 
-Fork local do Symphony baseado no fluxo **TypeScript-only (Codex-only)**.
+Local Symphony fork using a **TypeScript-only (Codex-only)** runtime.
 
-## O que mudou neste fork
+## What changed in this fork
 
-- Removido fluxo Linear para execução local.
-- Removido dependência de Elixir no bootstrap local.
-- Pipeline local usando apenas memória (`memory`) para tracker.
-- Dashboard local em `scripts/symphony-dashboard`.
-- Wrapper de execução em `scripts/start-symphony.sh`.
+- Removed the local Linear workflow.
+- Removed Elixir dependency from the local bootstrap.
+- Local runtime uses in-memory (`memory`) tracking only.
+- Local dashboard at `scripts/symphony-dashboard`.
+- Execution wrapper at `scripts/start-symphony.sh`.
 
-## Como executar local
+## Local run
 
 ```bash
 ./scripts/start-symphony.sh --port 4040
 ```
 
-Abra:
+Open:
 
 - `http://localhost:4040`
 
-Sem dashboard:
+Without the dashboard:
 
 ```bash
 ./scripts/start-symphony.sh
 ```
 
-## Arquivos principais
+## Main files
 
-- `scripts/run-symphony-local.ts` — runtime local em TS.
+- `scripts/run-symphony-local.ts` — local TS runtime.
 - `scripts/start-symphony.sh` — entrypoint.
 - `scripts/symphony-dashboard/index.html`
 - `scripts/symphony-dashboard/app.js`
 - `scripts/symphony-dashboard/styles.css`
-- `scripts/symphony-local-issues.json` — catálogo local de issues.
+- `scripts/symphony-local-issues.json` — local issue catalog.
 
-## Estado local
+## Local state
 
 - `~/.local/share/symphony-aozo/WORKFLOW.local.md`
 - `~/.local/share/symphony-aozo/symphony-memory-state.json`

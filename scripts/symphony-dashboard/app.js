@@ -48,15 +48,15 @@ function renderOverview(issues) {
       <p class="value">${total}</p>
     </div>
     <div class="kpi">
-      <p class="muted">Concluídas</p>
+      <p class="muted">Done</p>
       <p class="value">${done}</p>
     </div>
     <div class="kpi">
-      <p class="muted">Em Andamento</p>
+      <p class="muted">In Progress</p>
       <p class="value">${inProgress}</p>
     </div>
     <div class="kpi">
-      <p class="muted">Bloqueadas</p>
+      <p class="muted">Blocked</p>
       <p class="value">${blocked}</p>
     </div>
   `;
@@ -95,7 +95,7 @@ function renderIssues(issues) {
   });
 
   if (!filtered.length) {
-    issueListEl.innerHTML = '<p class="muted">Nenhuma issue para esse filtro.</p>';
+    issueListEl.innerHTML = '<p class="muted">No issues match this filter.</p>';
     return;
   }
 
@@ -118,7 +118,7 @@ function renderIssues(issues) {
       return `
         <article class="issue-card">
           <h3 class="issue-title">${escapeHtml(issue.identifier)} - ${escapeHtml(issue.title)}</h3>
-          <p class="muted">${escapeHtml(issue.description || "Sem descricao")}</p>
+          <p class="muted">${escapeHtml(issue.description || "No description")}</p>
           <div class="meta">
             <span class="state-badge ${stateClass}">${escapeHtml(issue.state)}</span>
             <span>Priority: ${issue.priority}</span>
@@ -140,7 +140,7 @@ function renderRuntimeMeta(state) {
       <span>Workflow: ${escapeHtml(state.workflowPath)}</span>
       <span>Tracker: ${escapeHtml(state.trackerKind)}</span>
     </div>
-    <p class="muted">Última atualização: ${escapeHtml(state.startedAt)}</p>
+    <p class="muted">Last updated: ${escapeHtml(state.startedAt)}</p>
   `;
 }
 
@@ -156,19 +156,19 @@ async function setIssueState(issueId, nextState) {
 
     if (!response.ok) {
       const payload = await response.json().catch(() => ({}));
-      throw new Error(payload.error || "Falha na atualização");
+      throw new Error(payload.error || "Failed to update issue state");
     }
 
     await loadState();
   } catch (error) {
-    alert(error.message || "Erro ao alterar estado.");
+    alert(error.message || "Failed to change issue state.");
   }
 }
 
 async function loadState() {
   const response = await fetch("/api/state");
   if (!response.ok) {
-    throw new Error("Falha no estado do runtime.");
+    throw new Error("Failed to load runtime state.");
   }
 
   const payload = await response.json();
@@ -211,7 +211,7 @@ async function refresh() {
   try {
     await loadState();
   } catch (error) {
-    issueListEl.innerHTML = `<p class="muted">Erro ao carregar o estado: ${escapeHtml(error.message || error)}</p>`;
+    issueListEl.innerHTML = `<p class="muted">Failed to load state: ${escapeHtml(error.message || error)}</p>`;
   }
 }
 

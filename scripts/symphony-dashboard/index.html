@@ -9,10 +9,10 @@
   <body>
     <div class="shell">
       <header class="topbar">
-        <div>
+      <div>
           <p class="eyebrow">Symphony</p>
           <h1>Symphony Local Runtime</h1>
-          <p id="subtitle" class="muted">Runtime TypeScript · Modo local memory</p>
+          <p id="subtitle" class="muted">Runtime TypeScript · Local memory mode</p>
         </div>
         <div class="badges">
           <span id="health" class="badge">status: connecting</span>
@@ -22,17 +22,17 @@
 
       <main class="layout">
         <section class="card">
-          <h2>Visão geral</h2>
+          <h2>Overview</h2>
           <div id="overview" class="grid"></div>
         </section>
 
         <section class="card">
           <div class="toolbar">
-            <h2>Issues locais</h2>
+            <h2>Local issues</h2>
             <div class="toolbar-right">
-              <label for="state-filter">Filtrar:</label>
+              <label for="state-filter">Filter:</label>
               <select id="state-filter">
-                <option value="all">Todas</option>
+                <option value="all">All</option>
                 <option value="Todo">Todo</option>
                 <option value="In Progress">In Progress</option>
                 <option value="In Review">In Review</option>
@@ -41,8 +41,8 @@
                 <option value="Cancelled">Cancelled</option>
               </select>
 
-              <label for="query">Busca:</label>
-              <input id="query" placeholder="ex: LOCAL-1, titulo" />
+              <label for="query">Search:</label>
+              <input id="query" placeholder="e.g. LOCAL-1, title" />
             </div>
           </div>
           <div id="issue-list" class="issue-list"></div>
