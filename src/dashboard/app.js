@@ -148,7 +148,7 @@ function renderRuntimeMeta(state) {
     <div class="meta">
       <span>Repository: ${escapeHtml(state.sourceRepoUrl || "local")}</span>
       <span>Workflow: ${escapeHtml(state.workflowPath || "local")}</span>
-      <span>Tracker: ${escapeHtml(state.trackerKind || "memory")}</span>
+      <span>Tracker: ${escapeHtml(state.trackerKind || "filesystem")}</span>
       <span>Agent: ${escapeHtml(state.config?.agentCommand ? "external" : "simulated")}</span>
     </div>
     <p class="muted">Started at ${formatDate(state.startedAt)}</p>

@@ -1,0 +1,341 @@
+name: Symphifo CI/CD
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+concurrency:
+  group: symphifo-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  quality:
+    name: Quality Gate
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        run: corepack enable pnpm && corepack prepare pnpm@9 --activate
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "23"
+          registry-url: "https://registry.npmjs.org"
+          cache: "pnpm"
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Validate package metadata
+        run: |
+          node -e "
+            const pkg = require('./package.json');
+            if (!pkg.name || pkg.name !== 'symphifo') throw new Error('package name must be symphifo');
+            if (!pkg.bin || !pkg.bin.symphifo) throw new Error('bin.symphifo is required');
+            if (!pkg.publishConfig || pkg.publishConfig.access !== 'public') throw new Error('publishConfig.access must be public');
+            console.log('package metadata OK');
+          "
+
+      - name: Smoke runtime CLI
+        run: |
+          node <<'JS'
+          const { spawn } = require('node:child_process');
+          const child = spawn('node', ['./bin/symphifo.js', '--once'], { stdio: ['ignore', 'pipe', 'pipe'] });
+          let stdout = '';
+          let stderr = '';
+          child.stdout.on('data', (chunk) => stdout += chunk.toString());
+          child.stderr.on('data', (chunk) => stderr += chunk.toString());
+          child.on('exit', (code) => {
+            if (code !== 1) {
+              console.error({ code, stdout, stderr });
+              process.exit(1);
+            }
+            if (!stderr.includes('No agent command configured')) {
+              console.error(stderr);
+              process.exit(1);
+            }
+            console.log('runtime CLI smoke OK');
+          });
+          JS
+
+      - name: Smoke MCP server
+        run: |
+          node <<'JS'
+          const { spawn } = require('node:child_process');
+
+          function encode(message) {
+            const body = JSON.stringify(message);
+            return `Content-Length: ${Buffer.byteLength(body, 'utf8')}\r\n\r\n${body}`;
+          }
+
+          const child = spawn('node', ['./bin/symphifo.js', 'mcp'], { stdio: ['pipe', 'pipe', 'pipe'] });
+          let buffer = Buffer.alloc(0);
+          let responses = [];
+          let stderr = '';
+
+          child.stderr.on('data', (chunk) => {
+            stderr += chunk.toString();
+          });
+
+          child.stdout.on('data', (chunk) => {
+            buffer = Buffer.concat([buffer, chunk]);
+            while (true) {
+              const raw = buffer.toString('utf8');
+              const separatorIndex = raw.indexOf('\r\n\r\n');
+              if (separatorIndex === -1) break;
+
+              const header = raw.slice(0, separatorIndex);
+              const match = header.match(/Content-Length: (\d+)/i);
+              if (!match) break;
+
+              const bodyLength = Number(match[1]);
+              const bodyStart = separatorIndex + 4;
+              const body = raw.slice(bodyStart);
+              if (Buffer.byteLength(body, 'utf8') < bodyLength) break;
+
+              const payload = body.slice(0, bodyLength);
+              buffer = Buffer.from(body.slice(bodyLength), 'utf8');
+              responses.push(JSON.parse(payload));
+
+              if (responses.length === 4) {
+                child.kill('SIGTERM');
+              }
+            }
+          });
+
+          child.on('exit', () => {
+            const ids = new Set(responses.map((response) => response.id));
+            if (!ids.has(1) || !ids.has(2) || !ids.has(3) || !ids.has(4)) {
+              console.error({ responses, stderr });
+              process.exit(1);
+            }
+
+            const resourceResponse = responses.find((response) => response.id === 2);
+            const toolResponse = responses.find((response) => response.id === 3);
+            const promptResponse = responses.find((response) => response.id === 4);
+
+            if (!resourceResponse?.result?.resources?.length) {
+              console.error(resourceResponse);
+              process.exit(1);
+            }
+
+            if (!toolResponse?.result?.tools?.some((tool) => tool.name === 'symphifo.create_issue')) {
+              console.error(toolResponse);
+              process.exit(1);
+            }
+
+            if (!promptResponse?.result?.prompts?.some((prompt) => prompt.name === 'symphifo-integrate-client')) {
+              console.error(promptResponse);
+              process.exit(1);
+            }
+
+            console.log('MCP smoke OK');
+          });
+
+          for (const request of [
+            { jsonrpc: '2.0', id: 1, method: 'initialize', params: {} },
+            { jsonrpc: '2.0', id: 2, method: 'resources/list', params: {} },
+            { jsonrpc: '2.0', id: 3, method: 'tools/list', params: {} },
+            { jsonrpc: '2.0', id: 4, method: 'prompts/list', params: {} },
+          ]) {
+            child.stdin.write(encode(request));
+          }
+          JS
+
+      - name: Pack tarball
+        run: |
+          rm -rf .artifacts
+          mkdir -p .artifacts
+          pnpm pack --pack-destination .artifacts
+
+      - name: Smoke packed tarball
+        run: |
+          TARBALL=$(find .artifacts -maxdepth 1 -name 'symphifo-*.tgz' | head -n 1)
+          test -n "$TARBALL"
+          TMPDIR=$(mktemp -d)
+          cd "$TMPDIR"
+          npm init -y >/dev/null 2>&1
+          npm install "$GITHUB_WORKSPACE/$TARBALL" >/dev/null 2>&1
+          node <<'JS'
+          const { spawn } = require('node:child_process');
+          const child = spawn('./node_modules/.bin/symphifo', ['--once'], { stdio: ['ignore', 'pipe', 'pipe'] });
+          let stderr = '';
+          child.stderr.on('data', (chunk) => stderr += chunk.toString());
+          child.on('exit', (code) => {
+            if (code !== 1 || !stderr.includes('No agent command configured')) {
+              console.error({ code, stderr });
+              process.exit(1);
+            }
+            console.log('packed tarball smoke OK');
+          });
+          JS
+
+  release-next:
+    name: Release Next
+    needs: quality
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - name: Skip version-bump commits
+        id: check
+        env:
+          COMMIT_MSG: ${{ github.event.head_commit.message }}
+        run: |
+          FIRST_LINE=$(echo "$COMMIT_MSG" | head -n 1)
+          if [[ "$FIRST_LINE" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Checkout
+        if: steps.check.outputs.skip != 'true'
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        if: steps.check.outputs.skip != 'true'
+        run: corepack enable pnpm && corepack prepare pnpm@9 --activate
+
+      - name: Setup Node.js
+        if: steps.check.outputs.skip != 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version: "23"
+          registry-url: "https://registry.npmjs.org"
+          cache: "pnpm"
+
+      - name: Install dependencies
+        if: steps.check.outputs.skip != 'true'
+        run: pnpm install --frozen-lockfile
+
+      - name: Bump next version
+        if: steps.check.outputs.skip != 'true'
+        id: version
+        run: |
+          CURRENT_VERSION=$(node -p "require('./package.json').version")
+          BASE_VERSION=$(echo "$CURRENT_VERSION" | cut -d'-' -f1)
+          NEXT_VERSION="$BASE_VERSION-next.${GITHUB_SHA::7}"
+          npm version "$NEXT_VERSION" --no-git-tag-version
+          echo "version=$NEXT_VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Publish next
+        if: steps.check.outputs.skip != 'true'
+        run: pnpm publish --tag next --no-git-checks --provenance
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Smoke published next package
+        if: steps.check.outputs.skip != 'true'
+        run: |
+          sleep 20
+          node <<'JS'
+          const { spawn } = require('node:child_process');
+          const child = spawn('npx', ['-y', 'symphifo@next', '--once'], { stdio: ['ignore', 'pipe', 'pipe'] });
+          let stderr = '';
+          child.stderr.on('data', (chunk) => stderr += chunk.toString());
+          child.on('exit', (code) => {
+            if (code !== 1 || !stderr.includes('No agent command configured')) {
+              console.error({ code, stderr });
+              process.exit(1);
+            }
+            console.log('published next smoke OK');
+          });
+          JS
+
+      - name: Job summary
+        if: steps.check.outputs.skip != 'true'
+        run: |
+          echo "## Next release published" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Package: \`symphifo@${{ steps.version.outputs.version }}\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Channel: \`next\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Install: \`npm install symphifo@next\`" >> "$GITHUB_STEP_SUMMARY"
+
+  release-stable:
+    name: Release Stable
+    needs: quality
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: write
+      id-token: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        run: corepack enable pnpm && corepack prepare pnpm@9 --activate
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "23"
+          registry-url: "https://registry.npmjs.org"
+          cache: "pnpm"
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Validate tag version
+        run: |
+          TAG_VERSION=${GITHUB_REF#refs/tags/v}
+          PACKAGE_VERSION=$(node -p "require('./package.json').version")
+          test "$TAG_VERSION" = "$PACKAGE_VERSION"
+
+      - name: Publish stable
+        run: pnpm publish --no-git-checks --provenance
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Smoke published stable package
+        run: |
+          sleep 20
+          node <<'JS'
+          const { spawn } = require('node:child_process');
+          const child = spawn('npx', ['-y', 'symphifo', '--once'], { stdio: ['ignore', 'pipe', 'pipe'] });
+          let stderr = '';
+          child.stderr.on('data', (chunk) => stderr += chunk.toString());
+          child.on('exit', (code) => {
+            if (code !== 1 || !stderr.includes('No agent command configured')) {
+              console.error({ code, stderr });
+              process.exit(1);
+            }
+            console.log('published stable smoke OK');
+          });
+          JS
+
+      - name: Create GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          generate_release_notes: true
+          draft: false
+          prerelease: false
+
+      - name: Job summary
+        run: |
+          VERSION=${GITHUB_REF#refs/tags/v}
+          echo "## Stable release published" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Package: \`symphifo@$VERSION\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Channel: \`latest\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Install: \`npm install symphifo\`" >> "$GITHUB_STEP_SUMMARY"

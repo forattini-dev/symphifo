@@ -1,0 +1,42 @@
+{
+  "name": "symphifo",
+  "version": "0.1.0",
+  "private": false,
+  "type": "module",
+  "description": "Filesystem-backed local Symphifo orchestrator with a TypeScript CLI, MCP mode, and multi-agent Codex or Claude workflows.",
+  "bin": {
+    "symphifo": "./bin/symphifo.js"
+  },
+  "scripts": {
+    "start": "node ./bin/symphifo.js",
+    "mcp": "node ./bin/symphifo.js mcp"
+  },
+  "files": [
+    "bin/",
+    "src/",
+    "WORKFLOW.md",
+    "README.md",
+    "SYMPHIFO.md",
+    "LICENSE",
+    "NOTICE"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/forattini-dev/symphifo.git"
+  },
+  "bugs": {
+    "url": "https://github.com/forattini-dev/symphifo/issues"
+  },
+  "homepage": "https://github.com/forattini-dev/symphifo#readme",
+  "publishConfig": {
+    "access": "public"
+  },
+  "engines": {
+    "node": ">=23"
+  },
+  "dependencies": {
+    "cli-args-parser": "^1.0.6",
+    "s3db.js": "^21.2.2",
+    "yaml": "^2.8.1"
+  }
+}

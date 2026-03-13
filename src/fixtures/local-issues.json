@@ -1,0 +1,13 @@
+[
+  {
+    "id": "LOCAL-1",
+    "identifier": "LOCAL-1",
+    "title": "Primeira tarefa local do Symphifo",
+    "description": "Use este ticket como ponto de partida para validar o fluxo Codex-only no Symphifo.",
+    "priority": 1,
+    "state": "Todo",
+    "labels": ["symphifo-local", "bootstrap"],
+    "url": "symphifo://local/LOCAL-1",
+    "assigned_to_worker": true
+  }
+]
