@@ -29,25 +29,25 @@ Runtime requirement:
 Run the standard local runtime:
 
 ```bash
-npx symphifo
+npx -y symphifo
 ```
 
 Run the MCP server over stdio:
 
 ```bash
-npx symphifo mcp
+npx -y symphifo mcp
 ```
 
 Start the API and dashboard:
 
 ```bash
-npx symphifo --port 4040
+npx -y symphifo --port 4040
 ```
 
 Override the persistence root:
 
 ```bash
-npx symphifo --persistence /path/to/root
+npx -y symphifo --persistence /path/to/root
 ```
 
 By default:
@@ -66,7 +66,7 @@ When `--port` is set, open:
 Run the local UI:
 
 ```bash
-npx symphifo --port 4040
+npx -y symphifo --port 4040
 ```
 
 Default local flow:
@@ -316,7 +316,7 @@ The issue inspection routes use these partitions directly, including pipeline/se
 
 ## MCP surface
 
-`npx symphifo mcp` starts a stdio MCP server backed by the same `s3db` filesystem store as the runtime.
+`npx -y symphifo mcp` starts a stdio MCP server backed by the same `s3db` filesystem store as the runtime.
 
 Resources:
 
@@ -350,7 +350,7 @@ Minimal MCP client configuration:
   "mcpServers": {
     "symphifo": {
       "command": "npx",
-      "args": ["symphifo", "mcp", "--workspace", "/path/to/workspace", "--persistence", "/path/to/workspace"]
+      "args": ["-y", "symphifo", "mcp", "--workspace", "/path/to/workspace", "--persistence", "/path/to/workspace"]
     }
   }
 }
@@ -385,8 +385,8 @@ git push origin v0.1.0
 After publish:
 
 ```bash
-npx symphifo@latest --port 4040
-npx symphifo@latest mcp
+npx -y symphifo@latest --port 4040
+npx -y symphifo@latest mcp
 ```
 
 Release checklist:
