@@ -1,6 +1,6 @@
 {
   "name": "symphifo",
-  "version": "0.1.9",
+  "version": "0.1.10",
   "private": false,
   "type": "module",
   "description": "Filesystem-backed local Symphifo orchestrator with a TypeScript CLI, MCP mode, and multi-agent Codex or Claude workflows.",
