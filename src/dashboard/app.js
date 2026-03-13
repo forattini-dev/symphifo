@@ -1,26 +1,57 @@
 // ── Theme switcher (runs immediately to avoid flash) ─────────────────────────
 
-const THEMES = ["citadel", "midnight", "ember", "arctic", "crimson", "bone"];
-const THEME_COLORS = { citadel: "#3dff14", midnight: "#3b82f6", ember: "#f59e0b", arctic: "#22d3ee", crimson: "#ef4444", bone: "#d0cac0" };
-const savedTheme = localStorage.getItem("symphifo-theme") || "citadel";
-if (savedTheme !== "citadel") document.documentElement.setAttribute("data-theme", savedTheme);
+const THEME_STORAGE_KEY = "symphifo-theme";
+const THEME_CHOICES = ["auto", "halloween", "cupcake"];
+const systemThemeQuery = window.matchMedia("(prefers-color-scheme: dark)");
 
-function applyTheme(theme) {
-  if (theme === "citadel") {
-    document.documentElement.removeAttribute("data-theme");
-  } else {
-    document.documentElement.setAttribute("data-theme", theme);
-  }
-  localStorage.setItem("symphifo-theme", theme);
+function normalizeThemeChoice(raw) {
+  if (!raw) return "auto";
+  if (THEME_CHOICES.includes(raw)) return raw;
+  return "auto";
+}
 
-  // Update radio checked state
+function getSystemTheme() {
+  return systemThemeQuery.matches ? "halloween" : "cupcake";
+}
+
+function getSavedTheme() {
+  const raw = localStorage.getItem(THEME_STORAGE_KEY);
+  return normalizeThemeChoice(raw);
+}
+
+function applyTheme(themeChoice) {
+  const choice = normalizeThemeChoice(themeChoice);
+  const resolvedTheme = choice === "auto" ? getSystemTheme() : choice;
+
+  document.documentElement.setAttribute("data-theme", resolvedTheme);
+  localStorage.setItem(THEME_STORAGE_KEY, choice);
+
+  selectedTheme = choice;
+
   document.querySelectorAll('#theme-menu input[name="theme"]').forEach((radio) => {
-    radio.checked = radio.value === theme;
+    radio.checked = radio.value === choice;
   });
 
-  // Update swatch color
+  // Swatch picks up --plague from the active theme automatically
   const swatch = document.getElementById("theme-swatch");
-  if (swatch) swatch.style.background = THEME_COLORS[theme] || THEME_COLORS.citadel;
+  if (swatch) swatch.style.background = "var(--plague)";
+}
+
+let selectedTheme = getSavedTheme();
+applyTheme(selectedTheme);
+
+if (systemThemeQuery.addEventListener) {
+  systemThemeQuery.addEventListener("change", () => {
+    if (selectedTheme === "auto") {
+      applyTheme("auto");
+    }
+  });
+} else {
+  systemThemeQuery.addListener(() => {
+    if (selectedTheme === "auto") {
+      applyTheme("auto");
+    }
+  });
 }
 
 // Wire dropdown toggle
@@ -46,9 +77,6 @@ document.getElementById("theme-menu")?.addEventListener("change", (event) => {
     themeDropdown.classList.remove("open");
   }
 });
-
-// Apply saved theme on load
-applyTheme(savedTheme);
 
 // ── DOM references ───────────────────────────────────────────────────────────
 

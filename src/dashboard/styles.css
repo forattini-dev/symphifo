@@ -37,164 +37,67 @@
   --glow-strong: 0 0 28px rgba(78, 248, 26, 0.40);
 }
 
-/* ── Theme: Midnight (deep indigo / electric blue) ────────────────────────── */
+/* ── Theme overrides: map our custom vars to DaisyUI theme colors ─────────── */
+/* DaisyUI provides the themes via CDN. We just bridge our custom vars here. */
 
-[data-theme="midnight"] {
-  --void:    #020617;
-  --abyss:   #0a0e1f;
-  --crypt:   #0f1629;
-  --stone:   #151d33;
-  --cobble:  #1c2640;
-  --dungeon: #243050;
-  --ash:     #334166;
-  --iron:    #5a6b8a;
-  --silver:  #7b8db0;
-  --slate:   #a0b0cc;
-  --bone:    #c8d4e8;
-  --frost:   #eaf0ff;
+[data-theme="halloween"] {
+  --void:    oklch(0.15 0.02 30);
+  --abyss:   oklch(0.18 0.02 30);
+  --crypt:   oklch(0.22 0.02 30);
+  --stone:   oklch(0.26 0.02 30);
+  --cobble:  oklch(0.30 0.02 30);
+  --dungeon: oklch(0.36 0.02 30);
+  --ash:     oklch(0.42 0.02 30);
+  --iron:    oklch(0.55 0.01 30);
+  --silver:  oklch(0.65 0.01 30);
+  --slate:   oklch(0.75 0.01 30);
+  --bone:    oklch(0.85 0.01 30);
+  --frost:   oklch(0.95 0.005 30);
 
-  --plague:  #3b82f6;
-  --blight:  #2563eb;
-  --toxin:   #1d4ed8;
-  --ooze:    #1e3a5f;
-  --mold:    #0c1a33;
-
-  --ok:      #34d399;
-  --warn:    #f59e0b;
-  --danger:  #fb7185;
-  --info:    #818cf8;
-
-  --glow-weak:   0 0 10px rgba(59, 130, 246, 0.14);
-  --glow-mid:    0 0 18px rgba(59, 130, 246, 0.24);
-  --glow-strong: 0 0 28px rgba(59, 130, 246, 0.40);
-}
-
-/* ── Theme: Ember (warm amber / fire orange) ──────────────────────────────── */
-
-[data-theme="ember"] {
-  --void:    #0a0400;
-  --abyss:   #120a04;
-  --crypt:   #1a0f06;
-  --stone:   #22160b;
-  --cobble:  #2c1e10;
-  --dungeon: #3a2818;
-  --ash:     #4d3824;
-  --iron:    #7a5a3e;
-  --silver:  #9e7a58;
-  --slate:   #bfa07a;
-  --bone:    #dcc4a0;
-  --frost:   #f5efe4;
-
-  --plague:  #f59e0b;
-  --blight:  #d97706;
-  --toxin:   #b45309;
-  --ooze:    #6b3a08;
-  --mold:    #331c04;
+  --plague:  #f97316;
+  --blight:  #ea580c;
+  --toxin:   #c2410c;
+  --ooze:    #7c2d12;
+  --mold:    #2f0f0a;
 
   --ok:      #34d399;
-  --warn:    #fb923c;
+  --warn:    #fbbf24;
   --danger:  #f87171;
   --info:    #60a5fa;
 
-  --glow-weak:   0 0 10px rgba(245, 158, 11, 0.14);
-  --glow-mid:    0 0 18px rgba(245, 158, 11, 0.24);
-  --glow-strong: 0 0 28px rgba(245, 158, 11, 0.40);
+  --glow-weak:   0 0 10px rgba(249, 115, 22, 0.14);
+  --glow-mid:    0 0 18px rgba(249, 115, 22, 0.24);
+  --glow-strong: 0 0 28px rgba(249, 115, 22, 0.40);
 }
 
-/* ── Theme: Arctic (cool cyan / frost) ────────────────────────────────────── */
+[data-theme="cupcake"] {
+  --void:    oklch(0.97 0.01 80);
+  --abyss:   oklch(0.93 0.01 80);
+  --crypt:   oklch(0.89 0.01 80);
+  --stone:   oklch(0.85 0.01 80);
+  --cobble:  oklch(0.80 0.01 80);
+  --dungeon: oklch(0.74 0.01 80);
+  --ash:     oklch(0.65 0.01 80);
+  --iron:    oklch(0.50 0.01 80);
+  --silver:  oklch(0.40 0.01 80);
+  --slate:   oklch(0.30 0.01 80);
+  --bone:    oklch(0.22 0.01 80);
+  --frost:   oklch(0.15 0.01 80);
 
-[data-theme="arctic"] {
-  --void:    #000608;
-  --abyss:   #040d12;
-  --crypt:   #081418;
-  --stone:   #0e1c22;
-  --cobble:  #15262e;
-  --dungeon: #1e333c;
-  --ash:     #2c4550;
-  --iron:    #4d7080;
-  --silver:  #6d9aaa;
-  --slate:   #92bcc8;
-  --bone:    #c0dde4;
-  --frost:   #eaf5f8;
-
-  --plague:  #22d3ee;
-  --blight:  #06b6d4;
-  --toxin:   #0891b2;
-  --ooze:    #155e75;
-  --mold:    #083344;
-
-  --ok:      #34d399;
-  --warn:    #fbbf24;
-  --danger:  #fb7185;
-  --info:    #38bdf8;
-
-  --glow-weak:   0 0 10px rgba(34, 211, 238, 0.14);
-  --glow-mid:    0 0 18px rgba(34, 211, 238, 0.24);
-  --glow-strong: 0 0 28px rgba(34, 211, 238, 0.40);
-}
-
-/* ── Theme: Crimson (blood red / dark) ────────────────────────────────────── */
-
-[data-theme="crimson"] {
-  --void:    #080000;
-  --abyss:   #120404;
-  --crypt:   #1a0808;
-  --stone:   #220e0e;
-  --cobble:  #2e1414;
-  --dungeon: #3c1c1c;
-  --ash:     #502828;
-  --iron:    #804848;
-  --silver:  #a06868;
-  --slate:   #c09090;
-  --bone:    #dcc0c0;
-  --frost:   #f5eaea;
-
-  --plague:  #ef4444;
-  --blight:  #dc2626;
-  --toxin:   #b91c1c;
-  --ooze:    #7f1d1d;
-  --mold:    #450a0a;
-
-  --ok:      #4ade80;
-  --warn:    #fbbf24;
-  --danger:  #fb923c;
-  --info:    #60a5fa;
-
-  --glow-weak:   0 0 10px rgba(239, 68, 68, 0.14);
-  --glow-mid:    0 0 18px rgba(239, 68, 68, 0.24);
-  --glow-strong: 0 0 28px rgba(239, 68, 68, 0.40);
-}
-
-/* ── Theme: Bone (light mode) ─────────────────────────────────────────────── */
-
-[data-theme="bone"] {
-  --void:    #f8f6f2;
-  --abyss:   #f0ece6;
-  --crypt:   #e8e4dc;
-  --stone:   #ddd8ce;
-  --cobble:  #d0cac0;
-  --dungeon: #c0b8ac;
-  --ash:     #a8a098;
-  --iron:    #807870;
-  --silver:  #686058;
-  --slate:   #504840;
-  --bone:    #383028;
-  --frost:   #1a1610;
-
-  --plague:  #16a34a;
-  --blight:  #15803d;
-  --toxin:   #166534;
-  --ooze:    #a7e8bd;
-  --mold:    #dcfce7;
+  --plague:  #e879a0;
+  --blight:  #d4608a;
+  --toxin:   #c04878;
+  --ooze:    #fce4ec;
+  --mold:    #fdf2f4;
 
   --ok:      #16a34a;
   --warn:    #d97706;
   --danger:  #dc2626;
   --info:    #2563eb;
 
-  --glow-weak:   0 0 10px rgba(22, 163, 74, 0.10);
-  --glow-mid:    0 0 18px rgba(22, 163, 74, 0.16);
-  --glow-strong: 0 0 28px rgba(22, 163, 74, 0.24);
+  --glow-weak:   0 0 10px rgba(232, 121, 160, 0.10);
+  --glow-mid:    0 0 18px rgba(232, 121, 160, 0.16);
+  --glow-strong: 0 0 28px rgba(232, 121, 160, 0.24);
 }
 
 /* ── Reset ────────────────────────────────────────────────────────────────── */
@@ -295,17 +198,7 @@
   flex-shrink: 0;
 }
 
-.theme-dot[data-color] {
-  background: attr(data-color);
-}
-
-/* Explicit colors since attr() for background is not widely supported */
-.theme-menu li:nth-child(1) .theme-dot { background: #3dff14; }
-.theme-menu li:nth-child(2) .theme-dot { background: #3b82f6; }
-.theme-menu li:nth-child(3) .theme-dot { background: #f59e0b; }
-.theme-menu li:nth-child(4) .theme-dot { background: #22d3ee; }
-.theme-menu li:nth-child(5) .theme-dot { background: #ef4444; }
-.theme-menu li:nth-child(6) .theme-dot { background: #d0cac0; }
+/* Theme dot colors are set inline via style attribute in HTML */
 
 /* ── Body ─────────────────────────────────────────────────────────────────── */
 
