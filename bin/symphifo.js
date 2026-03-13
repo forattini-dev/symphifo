@@ -11,7 +11,7 @@ const packageRoot = resolve(__dirname, "..");
 const workspaceRoot = env.SYMPHIFO_WORKSPACE_ROOT ?? cwd();
 const cliScript = resolve(packageRoot, "src", "cli.ts");
 const require = createRequire(import.meta.url);
-const tsxCli = require.resolve("tsx/dist/cli.mjs");
+const tsxCli = require.resolve("tsx/cli");
 
 const child = spawn(execPath, [tsxCli, cliScript, ...argv.slice(2)], {
   cwd: workspaceRoot,

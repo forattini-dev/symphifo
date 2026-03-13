@@ -17,7 +17,7 @@ const packageJson = JSON.parse(readFileSync(resolve(packageRoot, "package.json")
 };
 const runtimeScript = resolve(packageRoot, "src", "runtime", "run-local.ts");
 const mcpScript = resolve(packageRoot, "src", "mcp", "server.ts");
-const tsxCli = require.resolve("tsx/dist/cli.mjs");
+const tsxCli = require.resolve("tsx/cli");
 
 const commonOptions = {
   workspace: {
