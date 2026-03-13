@@ -20,7 +20,7 @@ function createTransports(logPath?: string) {
   if (pretty) {
     targets.push({
       target: "pino-pretty",
-      options: { colorize: true, translateTime: "HH:MM:ss" },
+      options: { colorize: true, translateTime: "HH:MM:ss.l", ignore: "pid,hostname" },
       level,
     });
   } else {
