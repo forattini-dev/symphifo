@@ -5,7 +5,7 @@ import { loadAgentPipelineSnapshotForIssue, loadAgentSessionSnapshotsForIssue } 
 import { getApiRuntimeContextOrThrow } from "../api-runtime-context.ts";
 import { persistState } from "../store.ts";
 import { getEffectiveAgentProviders } from "../providers.ts";
-import { addEvent, handleStatePatch, transition } from "../issues.ts";
+import { addEvent, createIssueFromPayload, handleStatePatch, transition } from "../issues.ts";
 import { now } from "../helpers.ts";
 
 function getIssueId(c: unknown): string | null {
@@ -76,7 +76,7 @@ async function patchIssueState(c: unknown) {
     await persistState(context.state);
     return { body: { ok: true, issue } };
   } catch (error) {
-    return { status: 400, body: { ok: false, error: String(error) } };
+    return { status: 400, body: { ok: false, error: error instanceof Error ? error.message : String(error) } };
   }
 }
 
@@ -108,6 +108,20 @@ async function retryIssue(c: unknown) {
   addEvent(context.state, issue.id, "manual", `Manual retry requested for ${issue.id}.`);
   await persistState(context.state);
   return { body: { ok: true, issue } };
+}
+
+async function createIssue(c: unknown) {
+  const context = getApiRuntimeContextOrThrow();
+  try {
+    const payload = await (c as { req: { json: () => Promise<unknown> } }).req.json() as JsonRecord;
+    const issue = createIssueFromPayload(payload, context.state.issues, context.workflowDefinition);
+    context.state.issues.push(issue);
+    addEvent(context.state, issue.id, "info", `Issue ${issue.identifier} created via API.`);
+    await persistState(context.state);
+    return { body: { ok: true, issue } };
+  } catch (error) {
+    return { status: 400, body: { ok: false, error: error instanceof Error ? error.message : String(error) } };
+  }
 }
 
 async function cancelIssue(c: unknown) {
@@ -178,6 +192,13 @@ export default {
     auth: false,
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS"],
     description: "Issue registry for orchestration runtime",
+    "POST /": async (c: unknown) => {
+      const result = await createIssue(c);
+      if (result.status) {
+        return (c as any).json(result.body, result.status);
+      }
+      return (c as any).json(result.body, 201);
+    },
     "GET /:id/pipeline": async (c: unknown) => {
       const result = await getIssuePipeline(c);
       if (result.status) {

@@ -19,13 +19,13 @@
         <div class="badges">
           <span id="health" class="badge">status: connecting</span>
           <span id="lastRefresh" class="badge">refresh: -</span>
-          <div class="theme-dropdown" id="theme-dropdown">
-            <button type="button" class="badge theme-toggle" id="theme-toggle">
+          <div class="dropdown dropdown-end" id="theme-dropdown">
+            <div tabindex="0" role="button" class="badge theme-toggle" id="theme-toggle">
               <span class="theme-swatch" id="theme-swatch"></span>
               theme
               <svg width="10" height="10" viewBox="0 0 2048 2048" fill="currentColor"><path d="M1799 349l242 241-1017 1017L7 590l242-241 775 775 775-775z"/></svg>
-            </button>
-            <ul class="theme-menu" id="theme-menu">
+            </div>
+            <ul tabindex="0" class="dropdown-content menu bg-base-200 rounded-box z-50 w-40 p-2 shadow-lg" id="theme-menu">
               <li><label class="theme-option"><input type="radio" name="theme" value="auto" checked /><span class="theme-dot" style="background:#a855f7;"></span>Auto (OS)</label></li>
               <li><label class="theme-option"><input type="radio" name="theme" value="sunset" /><span class="theme-dot" style="background:#f97316;"></span>Sunset</label></li>
               <li><label class="theme-option"><input type="radio" name="theme" value="cupcake" /><span class="theme-dot" style="background:#fb7185;"></span>Cupcake</label></li>
@@ -35,25 +35,25 @@
       </header>
 
       <!-- Overview (always visible) -->
-      <section class="card">
+      <section class="overview-section">
         <h2>Overview</h2>
-        <div id="overview" class="grid"></div>
+        <div id="overview" class="stats shadow grid"></div>
       </section>
 
       <!-- Tab navigation -->
-      <nav class="tab-nav" id="tab-nav">
-        <button class="tab-btn active" data-tab="board">Board</button>
-        <button class="tab-btn" data-tab="list">List</button>
-        <button class="tab-btn" data-tab="events">Events</button>
-        <button class="tab-btn" data-tab="runtime">Runtime</button>
-      </nav>
+      <div class="tabs tabs-border" id="tab-nav" role="tablist">
+        <button class="tab tab-active" data-tab="board" role="tab">Board</button>
+        <button class="tab" data-tab="list" role="tab">List</button>
+        <button class="tab" data-tab="events" role="tab">Events</button>
+        <button class="tab" data-tab="runtime" role="tab">Runtime</button>
+      </div>
 
       <!-- Tab: Board (Kanban) -->
       <section class="tab-panel active" data-panel="board">
         <div class="toolbar">
           <div class="toolbar-right">
             <label for="state-filter">Filter:</label>
-            <select id="state-filter">
+            <select id="state-filter" class="select select-bordered select-sm">
               <option value="all">All</option>
               <option value="Todo">Todo</option>
               <option value="In Progress">In Progress</option>
@@ -64,15 +64,15 @@
             </select>
 
             <label for="category-filter">Capability:</label>
-            <select id="category-filter">
+            <select id="category-filter" class="select select-bordered select-sm">
               <option value="all">All</option>
             </select>
 
             <label for="query">Search:</label>
-            <input id="query" placeholder="Search issues..." />
+            <input id="query" class="input input-bordered input-sm" placeholder="Search issues..." />
 
-            <button id="rerun" title="Reload">↻</button>
-            <button id="new-issue-btn" class="btn-accent">+ New</button>
+            <button id="rerun" class="btn btn-sm btn-ghost" title="Reload">↻</button>
+            <button id="new-issue-btn" class="btn btn-sm btn-accent">+ New</button>
             <span id="issue-count" class="issue-count"></span>
           </div>
         </div>
@@ -82,32 +82,32 @@
           <div class="create-form-grid">
             <div class="form-group span-2">
               <label>Title</label>
-              <input id="cf-title" type="text" placeholder="What needs to be done" />
+              <input id="cf-title" type="text" class="input input-bordered input-sm w-full" placeholder="What needs to be done" />
             </div>
             <div class="form-group span-2">
               <label>Description</label>
-              <textarea id="cf-desc" rows="2" placeholder="Details, context, acceptance criteria..."></textarea>
+              <textarea id="cf-desc" rows="2" class="textarea textarea-bordered w-full" placeholder="Details, context, acceptance criteria..."></textarea>
             </div>
             <div class="form-group">
               <label>Priority (1-10)</label>
-              <input id="cf-priority" type="number" min="1" max="10" value="1" />
+              <input id="cf-priority" type="number" class="input input-bordered input-sm w-full" min="1" max="10" value="1" />
             </div>
             <div class="form-group">
               <label>Max Attempts</label>
-              <input id="cf-attempts" type="number" min="1" max="10" value="3" />
+              <input id="cf-attempts" type="number" class="input input-bordered input-sm w-full" min="1" max="10" value="3" />
             </div>
             <div class="form-group span-2">
               <label>Labels <span class="hint">comma-separated</span></label>
-              <input id="cf-labels" type="text" placeholder="bug, frontend, urgent" />
+              <input id="cf-labels" type="text" class="input input-bordered input-sm w-full" placeholder="bug, frontend, urgent" />
             </div>
             <div class="form-group span-2">
               <label>Paths <span class="hint">comma-separated file paths</span></label>
-              <input id="cf-paths" type="text" placeholder="src/foo.ts, src/bar.ts" />
+              <input id="cf-paths" type="text" class="input input-bordered input-sm w-full" placeholder="src/foo.ts, src/bar.ts" />
             </div>
           </div>
           <div class="create-form-actions">
-            <button id="cf-cancel">Cancel</button>
-            <button id="cf-submit" class="btn-accent">Create Issue</button>
+            <button id="cf-cancel" class="btn btn-sm btn-ghost">Cancel</button>
+            <button id="cf-submit" class="btn btn-sm btn-accent">Create Issue</button>
           </div>
         </div>
 
@@ -134,7 +134,7 @@
         <div class="toolbar">
           <div class="toolbar-right">
             <label for="event-kind-filter">Kind:</label>
-            <select id="event-kind-filter">
+            <select id="event-kind-filter" class="select select-bordered select-sm">
               <option value="all">All</option>
               <option value="info">info</option>
               <option value="state">state</option>
@@ -145,11 +145,11 @@
             </select>
 
             <label for="event-issue-filter">Issue:</label>
-            <select id="event-issue-filter">
+            <select id="event-issue-filter" class="select select-bordered select-sm">
               <option value="all">All</option>
             </select>
 
-            <button id="clear-events">Clear</button>
+            <button id="clear-events" class="btn btn-sm btn-ghost">Clear</button>
           </div>
         </div>
         <div id="events" class="events"></div>

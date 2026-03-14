@@ -58,23 +58,13 @@ if (systemThemeQuery.addEventListener) {
 const themeDropdown = document.getElementById("theme-dropdown");
 const themeToggle = document.getElementById("theme-toggle");
 
-themeToggle?.addEventListener("click", (event) => {
-  event.stopPropagation();
-  themeDropdown.classList.toggle("open");
-});
-
-// Close dropdown when clicking outside
-document.addEventListener("click", (event) => {
-  if (themeDropdown && !themeDropdown.contains(event.target)) {
-    themeDropdown.classList.remove("open");
-  }
-});
-
-// Wire radio buttons
+// DaisyUI dropdown handles open/close via focus/blur natively.
+// We just need to wire the radio buttons for theme selection.
 document.getElementById("theme-menu")?.addEventListener("change", (event) => {
   if (event.target.name === "theme") {
     applyTheme(event.target.value);
-    themeDropdown.classList.remove("open");
+    // Blur to close the DaisyUI dropdown
+    document.activeElement?.blur();
   }
 });
 
@@ -127,8 +117,8 @@ function switchTab(tabName) {
   localStorage.setItem("symphifo-view-mode", tabName);
 
   // Update tab buttons
-  document.querySelectorAll(".tab-btn").forEach((btn) => {
-    btn.classList.toggle("active", btn.dataset.tab === tabName);
+  document.querySelectorAll(".tab").forEach((btn) => {
+    btn.classList.toggle("tab-active", btn.dataset.tab === tabName);
   });
 
   // Show/hide panels
@@ -152,10 +142,10 @@ function switchTab(tabName) {
 // ── Toast notifications ─────────────────────────────────────────────────────
 
 function getOrCreateToastContainer() {
-  let container = document.querySelector(".toast");
+  let container = document.querySelector(".toast.toast-end");
   if (!container) {
     container = document.createElement("div");
-    container.className = "toast";
+    container.className = "toast toast-end";
     document.body.appendChild(container);
   }
   return container;
@@ -166,8 +156,8 @@ let toastQueue = 0;
 function showToast(message, kind = "error", durationMs = 4000) {
   const container = getOrCreateToastContainer();
   const item = document.createElement("div");
-  const cls = kind === "success" ? "toast-success" : kind === "warn" ? "toast-warn" : "";
-  item.className = `toast-item ${cls}`.trim();
+  const alertCls = kind === "success" ? "alert-success" : kind === "warn" ? "alert-warning" : "alert-error";
+  item.className = `alert ${alertCls} toast-item`;
   item.textContent = message;
 
   // Countdown progress bar
@@ -278,10 +268,10 @@ function animateCounter(element, from, to, durationMs = 400) {
 }
 
 function animateKpiValues() {
-  const kpis = overviewEl.querySelectorAll(".kpi");
+  const kpis = overviewEl.querySelectorAll(".stat");
   kpis.forEach((kpi) => {
-    const label = kpi.querySelector(".label")?.textContent?.trim() || "";
-    const valueEl = kpi.querySelector(".value");
+    const label = kpi.querySelector(".stat-title")?.textContent?.trim() || "";
+    const valueEl = kpi.querySelector(".stat-value");
     if (!valueEl) return;
     const rawValue = parseInt(valueEl.textContent, 10);
     if (isNaN(rawValue)) return;
@@ -331,10 +321,10 @@ function applyIssueCardAnimations(issues) {
 
 function sessionLoadingSkeleton() {
   return `<div class="session-loading-skeleton">
-    <div class="skeleton-line"></div>
-    <div class="skeleton-line"></div>
-    <div class="skeleton-line"></div>
-    <div class="skeleton-line"></div>
+    <div class="skeleton h-3 w-3/5"></div>
+    <div class="skeleton h-3 w-4/5"></div>
+    <div class="skeleton h-3 w-2/5"></div>
+    <div class="skeleton h-3 w-3/4"></div>
   </div>`;
 }
 
@@ -387,7 +377,10 @@ async function post(path, payload = {}) {
   });
   if (!response.ok) {
     const errorPayload = await response.json().catch(() => ({}));
-    throw new Error(errorPayload.error || `Request failed: ${response.status}`);
+    const errMsg = typeof errorPayload.error === "string"
+      ? errorPayload.error
+      : errorPayload.error?.message || errorPayload.message || JSON.stringify(errorPayload.error) || `Request failed: ${response.status}`;
+    throw new Error(errMsg);
   }
   return response.json();
 }
@@ -395,15 +388,16 @@ async function post(path, payload = {}) {
 // ── KPI Overview ─────────────────────────────────────────────────────────────
 
 function kpiCard(label, value, { accent = "", desc = "", filterKey = "", filterValue = "" } = {}) {
-  const cls = accent ? ` ${accent}` : "";
+  const colorMap = { accent: "text-primary", warn: "text-warning", danger: "text-error" };
+  const colorCls = colorMap[accent] || "";
   const clickable = filterKey ? " kpi-clickable" : "";
   const active = activeKpiFilter && activeKpiFilter.key === filterKey && activeKpiFilter.value === filterValue ? " kpi-active" : "";
   const dataAttrs = filterKey ? ` data-kpi-filter="${escapeHtml(filterKey)}" data-kpi-value="${escapeHtml(filterValue)}"` : "";
   return `
-    <div class="kpi${clickable}${active}"${dataAttrs}>
-      <p class="label">${label}</p>
-      <p class="value${cls}">${value}</p>
-      ${desc ? `<p class="desc">${escapeHtml(desc)}</p>` : ""}
+    <div class="stat${clickable}${active}"${dataAttrs}>
+      <div class="stat-title">${label}</div>
+      <div class="stat-value text-2xl ${colorCls}">${value}</div>
+      ${desc ? `<div class="stat-desc">${escapeHtml(desc)}</div>` : ""}
     </div>
   `;
 }
@@ -419,7 +413,7 @@ function updateTabBadges() {
   const issueCount = issues.length;
   const eventCount = allEvents.length;
 
-  document.querySelectorAll(".tab-btn").forEach((btn) => {
+  document.querySelectorAll(".tab").forEach((btn) => {
     const tab = btn.dataset.tab;
     if (tab === "board") btn.textContent = issueCount > 0 ? `Board (${issueCount})` : "Board";
     else if (tab === "list") btn.textContent = issueCount > 0 ? `List (${issueCount})` : "List";
@@ -451,7 +445,7 @@ function renderOverview(metrics, issues = []) {
       <div class="empty-overview">
         <div class="empty-overview-title">Ready to orchestrate</div>
         <div class="empty-overview-desc">Create issues and let your agents handle the work.</div>
-        <button class="btn-accent" id="empty-create-btn">Create first issue</button>
+        <button class="btn btn-sm btn-accent" id="empty-create-btn">Create first issue</button>
         <div class="empty-overview-hint">or POST to /issues via API</div>
       </div>
     `;
@@ -540,7 +534,7 @@ function renderOverview(metrics, issues = []) {
 // ── KPI click handler ───────────────────────────────────────────────────────
 
 overviewEl.addEventListener("click", (event) => {
-  const kpi = event.target.closest(".kpi-clickable");
+  const kpi = event.target.closest(".stat.kpi-clickable");
   if (!kpi) return;
 
   const filterKey = kpi.dataset.kpiFilter;
@@ -580,7 +574,7 @@ overviewEl.addEventListener("click", (event) => {
 // ── Issue Actions ────────────────────────────────────────────────────────────
 
 function actionButton(issueId, label, action, payload = "") {
-  return `<button type="button" class="action-button" data-id="${escapeHtml(issueId)}" data-action="${action}" data-payload="${escapeHtml(payload)}">${label}</button>`;
+  return `<button type="button" class="btn btn-xs btn-ghost" data-id="${escapeHtml(issueId)}" data-action="${action}" data-payload="${escapeHtml(payload)}">${label}</button>`;
 }
 
 function issueActions(issue) {
@@ -606,13 +600,21 @@ function issueActions(issue) {
     secondaryHtml = editBtn;
   }
 
-  const moreBtn = `<button type="button" class="btn-more" data-action="more" data-id="${escapeHtml(issue.id)}" title="More actions">&middot;&middot;&middot;</button>`;
+  const moreBtn = `<button type="button" class="btn btn-xs btn-ghost" data-action="more" data-id="${escapeHtml(issue.id)}" title="More actions">&middot;&middot;&middot;</button>`;
 
   return `${primaryHtml} ${moreBtn} <span class="actions-secondary" data-secondary-for="${escapeHtml(issue.id)}">${secondaryHtml}</span>`;
 }
 
 function stateClass(value) {
-  return `state-badge state-${String(value).replace(/\s+/g, "_")}`;
+  const map = {
+    "Todo": "badge badge-ghost badge-sm",
+    "In Progress": "badge badge-primary badge-sm",
+    "In Review": "badge badge-info badge-sm",
+    "Blocked": "badge badge-error badge-sm",
+    "Done": "badge badge-success badge-sm",
+    "Cancelled": "badge badge-warning badge-sm",
+  };
+  return map[value] || "badge badge-ghost badge-sm";
 }
 
 // ── Issue Rendering ──────────────────────────────────────────────────────────
@@ -656,9 +658,9 @@ function renderIssues(issues = []) {
   if (countEl) {
     if (selectedIssues.size > 0) {
       countEl.innerHTML = `<span class="batch-info">${selectedIssues.size} selected</span> `
-        + `<button type="button" class="action-button" id="batch-retry">Retry All</button> `
-        + `<button type="button" class="action-button" id="batch-cancel">Cancel All</button> `
-        + `<button type="button" class="action-button" id="batch-clear">Clear</button>`;
+        + `<button type="button" class="btn btn-xs btn-ghost" id="batch-retry">Retry All</button> `
+        + `<button type="button" class="btn btn-xs btn-ghost" id="batch-cancel">Cancel All</button> `
+        + `<button type="button" class="btn btn-xs btn-ghost" id="batch-clear">Clear</button>`;
     } else {
       countEl.textContent = filtered.length === issues.length
         ? `${issues.length} issues`
@@ -671,7 +673,7 @@ function renderIssues(issues = []) {
     if (hasAnyIssues) {
       issueListEl.innerHTML = `<div class="empty-list">
         <div class="empty-list-text">No issues match -- try adjusting filters</div>
-        <button class="btn-clear-filters" id="clear-filters-btn">Clear filters</button>
+        <button class="btn btn-sm btn-ghost" id="clear-filters-btn">Clear filters</button>
       </div>`;
       document.getElementById("clear-filters-btn")?.addEventListener("click", () => {
         stateFilter.value = "all";
@@ -712,20 +714,20 @@ function renderIssues(issues = []) {
         ? `<details class="history-detail"><summary>${historyEntries.length - 3} older entries</summary><ul class="history">${olderHistory}</ul></details>${recentHistory}`
         : recentHistory;
       const labels = Array.isArray(issue.labels)
-        ? issue.labels.map((l) => `<span class="tag">${escapeHtml(l)}</span>`).join("")
+        ? issue.labels.map((l) => `<span class="badge badge-outline badge-xs">${escapeHtml(l)}</span>`).join("")
         : "";
       const paths = Array.isArray(issue.paths) && issue.paths.length
-        ? issue.paths.map((p) => `<span class="tag mono">${escapeHtml(p)}</span>`).join("")
+        ? issue.paths.map((p) => `<span class="badge badge-outline badge-xs mono">${escapeHtml(p)}</span>`).join("")
         : "";
       const overlays = Array.isArray(issue.capabilityOverlays) && issue.capabilityOverlays.length
-        ? issue.capabilityOverlays.map((o) => `<span class="tag">${escapeHtml(`overlay:${o}`)}</span>`).join("")
+        ? issue.capabilityOverlays.map((o) => `<span class="badge badge-outline badge-xs">${escapeHtml(`overlay:${o}`)}</span>`).join("")
         : "";
       const category = issue.capabilityCategory
-        ? `<span class="tag">${escapeHtml(`capability:${issue.capabilityCategory}`)}</span>`
+        ? `<span class="badge badge-outline badge-xs">${escapeHtml(`capability:${issue.capabilityCategory}`)}</span>`
         : "";
 
       const blockedByHtml = Array.isArray(issue.blockedBy) && issue.blockedBy.length
-        ? issue.blockedBy.map((dep) => `<span class="blocked-by">${escapeHtml(dep)}</span>`).join("")
+        ? issue.blockedBy.map((dep) => `<span class="badge badge-error badge-xs">${escapeHtml(dep)}</span>`).join("")
         : "";
 
       const errorHtml = issue.lastError
@@ -742,8 +744,8 @@ function renderIssues(issues = []) {
 
       const noteHtml = (issue.state === "Blocked" || issue.state === "Todo")
         ? `<div class="note-form">
-            <input type="text" placeholder="Add note for next retry..." data-note-for="${escapeHtml(issue.id)}" />
-            <button type="button" class="action-button" data-id="${escapeHtml(issue.id)}" data-action="note">Send</button>
+            <input type="text" class="input input-bordered input-sm" placeholder="Add note for next retry..." data-note-for="${escapeHtml(issue.id)}" />
+            <button type="button" class="btn btn-xs btn-ghost" data-id="${escapeHtml(issue.id)}" data-action="note">Send</button>
           </div>`
         : "";
 
@@ -752,8 +754,8 @@ function renderIssues(issues = []) {
             <label class="split-label">Sub-task titles (one per line)</label>
             <textarea data-split-for="${escapeHtml(issue.id)}" rows="3" placeholder="Fix the header layout\nUpdate the unit tests\nAdd error handling"></textarea>
             <div class="split-form-actions">
-              <button type="button" class="action-button" data-id="${escapeHtml(issue.id)}" data-action="split-cancel">Cancel</button>
-              <button type="button" class="action-button btn-accent" data-id="${escapeHtml(issue.id)}" data-action="split-submit">Create Sub-tasks</button>
+              <button type="button" class="btn btn-xs btn-ghost" data-id="${escapeHtml(issue.id)}" data-action="split-cancel">Cancel</button>
+              <button type="button" class="btn btn-xs btn-accent" data-id="${escapeHtml(issue.id)}" data-action="split-submit">Create Sub-tasks</button>
             </div>
           </div>`
         : "";
@@ -763,8 +765,8 @@ function renderIssues(issues = []) {
       const deleteHtml = pendingDeleteId === issue.id
         ? `<div class="delete-confirm">
             <span>Delete ${escapeHtml(issue.identifier)}? This cannot be undone.</span>
-            <button type="button" class="action-button btn-danger" data-id="${escapeHtml(issue.id)}" data-action="delete-confirm">Confirm Delete</button>
-            <button type="button" class="action-button" data-id="${escapeHtml(issue.id)}" data-action="delete-cancel">Cancel</button>
+            <button type="button" class="btn btn-xs btn-error" data-id="${escapeHtml(issue.id)}" data-action="delete-confirm">Confirm Delete</button>
+            <button type="button" class="btn btn-xs btn-ghost" data-id="${escapeHtml(issue.id)}" data-action="delete-cancel">Cancel</button>
           </div>`
         : "";
 
@@ -1142,21 +1144,21 @@ function renderKanbanDetail(issue) {
   kanbanDetail.hidden = false;
 
   const stateActions = issue.state === "Blocked"
-    ? `<button class="action-button" data-action="retry" data-id="${escapeHtml(issue.id)}">Retry</button>
-       <button class="action-button" data-action="state" data-id="${escapeHtml(issue.id)}" data-payload="Todo">Set Todo</button>
-       <button class="action-button" data-action="cancel" data-id="${escapeHtml(issue.id)}">Cancel</button>`
+    ? `<button class="btn btn-xs btn-ghost" data-action="retry" data-id="${escapeHtml(issue.id)}">Retry</button>
+       <button class="btn btn-xs btn-ghost" data-action="state" data-id="${escapeHtml(issue.id)}" data-payload="Todo">Set Todo</button>
+       <button class="btn btn-xs btn-ghost" data-action="cancel" data-id="${escapeHtml(issue.id)}">Cancel</button>`
     : issue.state === "Todo"
-    ? `<button class="action-button" data-action="state" data-id="${escapeHtml(issue.id)}" data-payload="In Progress">Start</button>
-       <button class="action-button" data-action="cancel" data-id="${escapeHtml(issue.id)}" data-payload="Cancelled">Cancel</button>`
+    ? `<button class="btn btn-xs btn-ghost" data-action="state" data-id="${escapeHtml(issue.id)}" data-payload="In Progress">Start</button>
+       <button class="btn btn-xs btn-ghost" data-action="cancel" data-id="${escapeHtml(issue.id)}" data-payload="Cancelled">Cancel</button>`
     : issue.state === "Done" || issue.state === "Cancelled"
-    ? `<button class="action-button" data-action="retry" data-id="${escapeHtml(issue.id)}">Retry</button>`
-    : `<button class="action-button" data-action="cancel" data-id="${escapeHtml(issue.id)}">Cancel</button>`;
+    ? `<button class="btn btn-xs btn-ghost" data-action="retry" data-id="${escapeHtml(issue.id)}">Retry</button>`
+    : `<button class="btn btn-xs btn-ghost" data-action="cancel" data-id="${escapeHtml(issue.id)}">Cancel</button>`;
 
   kanbanDetailContent.innerHTML = `
     <div class="detail-issue-header" style="display:flex;align-items:center;gap:8px;margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid var(--ash);">
       <span class="mono" style="color:var(--plague);font-size:0.72rem;font-weight:600;">${escapeHtml(issue.identifier)}</span>
       <span style="color:var(--frost);font-size:0.78rem;font-weight:600;flex:1;">${escapeHtml(issue.title)}</span>
-      <button type="button" class="btn-close-detail" id="kanban-close-detail" title="Close">&times;</button>
+      <button type="button" class="btn btn-xs btn-ghost" id="kanban-close-detail" title="Close">&times;</button>
     </div>
     <p class="muted" style="margin:0 0 8px;">${escapeHtml(issue.description || "No description")}</p>
     <div class="meta">
@@ -1178,7 +1180,7 @@ function renderKanbanDetail(issue) {
   });
 
   // Wire action buttons
-  kanbanDetailContent.querySelectorAll(".action-button[data-action]").forEach((btn) => {
+  kanbanDetailContent.querySelectorAll(".btn[data-action]").forEach((btn) => {
     btn.addEventListener("click", async () => {
       const action = btn.dataset.action;
       const id = btn.dataset.id;
@@ -1207,7 +1209,7 @@ function renderDetailPanel(issue) {
   detailPanel.innerHTML = `
     <div class="detail-issue-header">
       <span class="mono">${escapeHtml(issue.identifier)}</span> ${escapeHtml(issue.title)}
-      <button type="button" class="btn-close-detail" id="close-detail" title="Close">&times;</button>
+      <button type="button" class="btn btn-xs btn-ghost" id="close-detail" title="Close">&times;</button>
     </div>
     <div class="meta" style="margin-top:0">
       <span class="${stateClass(issue.state)}">${escapeHtml(issue.state)}</span>
@@ -1458,8 +1460,8 @@ function renderRuntimeMeta(state) {
       <span>Agent: ${escapeHtml(state.config?.agentProvider || "auto")} (${escapeHtml(state.config?.agentCommand || "auto-detect")})</span>
       <span class="concurrency-control">
         Concurrency:
-        <input type="number" id="concurrency-input" class="concurrency-input" min="1" max="16" value="${escapeHtml(state.config?.workerConcurrency ?? 2)}" />
-        <button type="button" class="action-button concurrency-btn" id="save-concurrency-btn">Set</button>
+        <input type="number" id="concurrency-input" class="input input-bordered input-sm concurrency-input" min="1" max="16" value="${escapeHtml(state.config?.workerConcurrency ?? 2)}" />
+        <button type="button" class="btn btn-xs btn-ghost concurrency-btn" id="save-concurrency-btn">Set</button>
       </span>
     </div>
     <div id="providers-panel" class="meta" style="margin-top:4px"></div>
@@ -1491,7 +1493,7 @@ async function loadProviders() {
     const data = await fetchJSON("/providers");
     if (!data.providers || !data.providers.length) { panel.innerHTML = ""; return; }
     panel.innerHTML = "Providers: " + data.providers.map((p) =>
-      `<span class="tag ${p.available ? "tag-ok" : "tag-missing"}">${escapeHtml(p.name)}: ${p.available ? "available" : "not found"}</span>`
+      `<span class="badge badge-outline badge-xs ${p.available ? "badge-success" : "badge-error"}">${escapeHtml(p.name)}: ${p.available ? "available" : "not found"}</span>`
     ).join(" ");
   } catch { panel.innerHTML = ""; }
 }
@@ -1502,8 +1504,8 @@ async function loadParallelism() {
   try {
     const data = await fetchJSON("/parallelism");
     if (!data.reason) { panel.innerHTML = ""; return; }
-    const badge = data.canParallelize ? "tag-ok" : "tag-missing";
-    panel.innerHTML = `Parallelism: <span class="tag ${badge}">max safe=${data.maxSafeParallelism}</span> <span class="muted">${escapeHtml(data.reason)}</span>`;
+    const badge = data.canParallelize ? "badge-success" : "badge-error";
+    panel.innerHTML = `Parallelism: <span class="badge badge-outline badge-xs ${badge}">max safe=${data.maxSafeParallelism}</span> <span class="muted">${escapeHtml(data.reason)}</span>`;
   } catch { panel.innerHTML = ""; }
 }
 
@@ -1687,32 +1689,32 @@ function renderEditForm(issue) {
       <div class="create-form-grid">
         <div class="form-group span-2">
           <label>Title</label>
-          <input data-edit-title-for="${escapeHtml(issue.id)}" type="text" value="${escapeHtml(issue.title)}" />
+          <input data-edit-title-for="${escapeHtml(issue.id)}" type="text" class="input input-bordered input-sm w-full" value="${escapeHtml(issue.title)}" />
         </div>
         <div class="form-group span-2">
           <label>Description</label>
-          <textarea data-edit-desc-for="${escapeHtml(issue.id)}" rows="2">${escapeHtml(issue.description || "")}</textarea>
+          <textarea data-edit-desc-for="${escapeHtml(issue.id)}" rows="2" class="textarea textarea-bordered w-full">${escapeHtml(issue.description || "")}</textarea>
         </div>
         <div class="form-group">
           <label>Priority (1-10)</label>
-          <input data-edit-priority-for="${escapeHtml(issue.id)}" type="number" min="1" max="10" value="${escapeHtml(issue.priority)}" />
+          <input data-edit-priority-for="${escapeHtml(issue.id)}" type="number" class="input input-bordered input-sm w-full" min="1" max="10" value="${escapeHtml(issue.priority)}" />
         </div>
         <div class="form-group">
           <label>Labels <span class="hint">comma-separated</span></label>
-          <input data-edit-labels-for="${escapeHtml(issue.id)}" type="text" value="${escapeHtml((issue.labels || []).join(", "))}" />
+          <input data-edit-labels-for="${escapeHtml(issue.id)}" type="text" class="input input-bordered input-sm w-full" value="${escapeHtml((issue.labels || []).join(", "))}" />
         </div>
         <div class="form-group span-2">
           <label>Paths <span class="hint">comma-separated</span></label>
-          <input data-edit-paths-for="${escapeHtml(issue.id)}" type="text" value="${escapeHtml((issue.paths || []).join(", "))}" />
+          <input data-edit-paths-for="${escapeHtml(issue.id)}" type="text" class="input input-bordered input-sm w-full" value="${escapeHtml((issue.paths || []).join(", "))}" />
         </div>
         <div class="form-group span-2">
           <label>Blocked by <span class="hint">comma-separated issue IDs</span></label>
-          <input data-edit-blocked-for="${escapeHtml(issue.id)}" type="text" value="${escapeHtml((issue.blockedBy || []).join(", "))}" />
+          <input data-edit-blocked-for="${escapeHtml(issue.id)}" type="text" class="input input-bordered input-sm w-full" value="${escapeHtml((issue.blockedBy || []).join(", "))}" />
         </div>
       </div>
       <div class="create-form-actions">
-        <button type="button" class="action-button" data-id="${escapeHtml(issue.id)}" data-action="edit-cancel">Cancel</button>
-        <button type="button" class="action-button btn-accent" data-id="${escapeHtml(issue.id)}" data-action="edit-submit">Save</button>
+        <button type="button" class="btn btn-xs btn-ghost" data-id="${escapeHtml(issue.id)}" data-action="edit-cancel">Cancel</button>
+        <button type="button" class="btn btn-xs btn-accent" data-id="${escapeHtml(issue.id)}" data-action="edit-submit">Save</button>
       </div>
     </div>
   `;
@@ -1836,9 +1838,9 @@ function wireActions() {
     const countEl = document.getElementById("issue-count");
     if (countEl && selectedIssues.size > 0) {
       countEl.innerHTML = `<span class="batch-info">${selectedIssues.size} selected</span> `
-        + `<button type="button" class="action-button" id="batch-retry">Retry All</button> `
-        + `<button type="button" class="action-button" id="batch-cancel">Cancel All</button> `
-        + `<button type="button" class="action-button" id="batch-clear">Clear</button>`;
+        + `<button type="button" class="btn btn-xs btn-ghost" id="batch-retry">Retry All</button> `
+        + `<button type="button" class="btn btn-xs btn-ghost" id="batch-cancel">Cancel All</button> `
+        + `<button type="button" class="btn btn-xs btn-ghost" id="batch-clear">Clear</button>`;
     } else if (countEl) {
       const issues = appState.issues || [];
       countEl.textContent = `${issues.length} issues`;
@@ -1877,7 +1879,7 @@ function wireActions() {
   });
 
   // View toggle buttons
-  document.querySelectorAll(".tab-btn").forEach((btn) => {
+  document.querySelectorAll(".tab").forEach((btn) => {
     btn.addEventListener("click", () => switchTab(btn.dataset.tab));
   });
 

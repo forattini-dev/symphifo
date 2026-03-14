@@ -116,11 +116,7 @@
 ::-webkit-scrollbar-thumb { background: var(--ash); }
 ::-webkit-scrollbar-thumb:hover { background: var(--toxin); }
 
-/* ── Theme dropdown ───────────────────────────────────────────────────────── */
-
-.theme-dropdown {
-  position: relative;
-}
+/* ── Theme dropdown (uses DaisyUI dropdown component) ────────────────────── */
 
 .theme-toggle {
   display: inline-flex;
@@ -132,11 +128,6 @@
 
 .theme-toggle svg {
   opacity: 0.5;
-  transition: transform 150ms;
-}
-
-.theme-dropdown.open .theme-toggle svg {
-  transform: rotate(180deg);
 }
 
 .theme-swatch {
@@ -147,25 +138,6 @@
   flex-shrink: 0;
 }
 
-.theme-menu {
-  display: none;
-  position: absolute;
-  top: calc(100% + 4px);
-  right: 0;
-  z-index: 50;
-  list-style: none;
-  margin: 0;
-  padding: 4px;
-  background: var(--stone);
-  border: 1px solid var(--ash);
-  min-width: 160px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
-}
-
-.theme-dropdown.open .theme-menu {
-  display: block;
-}
-
 .theme-option {
   display: flex;
   align-items: center;
@@ -174,7 +146,6 @@
   font-size: 0.75rem;
   color: var(--slate);
   cursor: pointer;
-  transition: background 100ms, color 100ms;
   user-select: none;
 }
 
@@ -380,51 +351,20 @@ h2 {
   gap: 16px;
 }
 
-/* ── Cards ────────────────────────────────────────────────────────────────── */
+/* ── Overview section ─────────────────────────────────────────────────────── */
 
-.card {
+.overview-section {
   background: var(--crypt);
   border: 1px solid var(--ash);
   padding: 16px;
   transition: border-color 200ms;
 }
 
-.card:hover {
+.overview-section:hover {
   border-color: var(--dungeon);
 }
 
-/* ── Tab navigation ──────────────────────────────────────────────────────── */
-
-.tab-nav {
-  display: flex;
-  gap: 0;
-  border-bottom: 1px solid var(--ash);
-  margin-bottom: 0;
-}
-
-.tab-btn {
-  padding: 10px 18px;
-  font-size: 0.78rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--iron);
-  background: transparent;
-  border: none;
-  border-bottom: 2px solid transparent;
-  cursor: pointer;
-  transition: color 150ms, border-color 150ms;
-  position: relative;
-}
-
-.tab-btn:hover {
-  color: var(--slate);
-}
-
-.tab-btn.active {
-  color: var(--plague);
-  border-bottom-color: var(--plague);
-}
+/* ── Tab panel animation ─────────────────────────────────────────────────── */
 
 .tab-panel {
   animation: tab-fade-in 200ms cubic-bezier(0.16, 1, 0.3, 1);
@@ -439,7 +379,7 @@ h2 {
   to { opacity: 1; transform: translateY(0); }
 }
 
-/* ── KPI grid ─────────────────────────────────────────────────────────────── */
+/* ── KPI grid (DaisyUI stats) ─────────────────────────────────────────────── */
 
 .grid {
   display: grid;
@@ -447,71 +387,18 @@ h2 {
   grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
 }
 
-.kpi {
-  background: var(--stone);
-  border: 1px solid var(--ash);
-  padding: 16px 14px;
-  text-align: center;
-  transition: border-color 200ms, box-shadow 200ms, background 200ms;
-}
-
-.kpi:hover {
-  border-color: color-mix(in srgb, var(--plague) 25%, transparent);
-  box-shadow: var(--glow-weak);
-}
-
-.kpi .label {
-  font-size: 0.65rem;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: var(--iron);
-  margin: 0 0 6px;
-}
-
-.kpi .value {
-  margin: 0;
-  font-size: 2rem;
-  font-weight: 800;
-  line-height: 1.1;
-  color: var(--frost);
-  font-variant-numeric: tabular-nums;
-  letter-spacing: -0.02em;
-}
-
-.kpi .value.accent {
-  color: var(--plague);
-  text-shadow: 0 0 16px color-mix(in srgb, var(--plague) 20%, transparent);
-}
-
-.kpi .value.warn {
-  color: var(--warn);
-}
-
-.kpi .value.danger {
-  color: var(--danger);
-}
-
-.kpi .desc {
-  margin: 4px 0 0;
-  font-size: 0.68rem;
-  color: var(--silver);
-}
-
-/* ── Clickable KPIs ──────────────────────────────────────────────────────── */
-
-.kpi-clickable {
+.stat.kpi-clickable {
   cursor: pointer;
   user-select: none;
 }
 
-.kpi-clickable:active {
+.stat.kpi-clickable:active {
   background: var(--cobble);
 }
 
-.kpi-active {
-  border-color: var(--toxin);
-  box-shadow: var(--glow-mid);
-  background: var(--cobble);
+.stat.kpi-active {
+  outline: 2px solid oklch(var(--p));
+  outline-offset: -2px;
 }
 
 /* ── Toolbar ──────────────────────────────────────────────────────────────── */
@@ -538,44 +425,8 @@ h2 {
   color: var(--iron);
 }
 
-/* ── Form controls ────────────────────────────────────────────────────────── */
-
-select,
-input,
-button {
-  background: var(--abyss);
-  color: var(--bone);
-  border: 1px solid var(--ash);
-  padding: 6px 10px;
-  font-size: 0.78rem;
-  font-family: inherit;
-  transition: border-color 150ms, box-shadow 150ms;
-}
-
-select:focus,
-input:focus {
-  outline: none;
-  border-color: var(--toxin);
-  box-shadow: 0 0 0 1px var(--ooze);
-}
-
-button {
-  cursor: pointer;
-  font-weight: 500;
-}
-
-button:hover {
-  border-color: var(--toxin);
-}
-
-button:active {
-  background: var(--stone);
-}
-
-button:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
+/* ── Form controls (DaisyUI handles base input/select/button styles) ─────── */
+/* Keep only minimal overrides not covered by DaisyUI */
 
 /* ── Issue list ───────────────────────────────────────────────────────────── */
 
@@ -626,52 +477,11 @@ button:disabled {
   font-size: 0.7rem;
 }
 
-/* ── State badges ─────────────────────────────────────────────────────────── */
+/* ── State badges (now uses DaisyUI badge component) ─────────────────────── */
 
-.state-badge {
-  padding: 2px 8px;
-  border: 1px solid currentColor;
-  font-size: 0.68rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-}
+/* ── Tags (now uses DaisyUI badge component) ─────────────────────────────── */
 
-.state-Todo         { color: var(--slate); }
-.state-In_Progress  { color: var(--plague); text-shadow: 0 0 8px color-mix(in srgb, var(--plague) 25%, transparent); }
-.state-In_Review    { color: var(--info); }
-.state-Blocked      { color: var(--danger); }
-.state-Done         { color: var(--ok); }
-.state-Cancelled    { color: var(--warn); }
-
-/* ── Tags ─────────────────────────────────────────────────────────────────── */
-
-.tag {
-  border: 1px solid var(--ash);
-  padding: 2px 8px;
-  font-size: 0.68rem;
-  color: var(--silver);
-  transition: border-color 150ms;
-  word-break: break-all;
-  overflow-wrap: break-word;
-  max-width: 100%;
-}
-
-.tag:hover {
-  border-color: var(--dungeon);
-}
-
-.tag-ok {
-  border-color: var(--toxin);
-  color: var(--toxin);
-}
-
-.tag-missing {
-  border-color: var(--danger, #ff4444);
-  color: var(--danger, #ff4444);
-}
-
-/* ── Action buttons ───────────────────────────────────────────────────────── */
+/* ── Action buttons (now uses DaisyUI btn component) ─────────────────────── */
 
 .actions {
   margin-top: 10px;
@@ -679,56 +489,6 @@ button:disabled {
   flex-wrap: wrap;
   gap: 6px;
   align-items: center;
-}
-
-.action-button {
-  background: var(--cobble);
-  color: var(--slate);
-  border: 1px solid var(--ash);
-  padding: 4px 10px;
-  font-size: 0.7rem;
-  font-weight: 500;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  cursor: pointer;
-  transition: border-color 150ms, color 150ms, box-shadow 150ms;
-}
-
-.action-button:hover {
-  border-color: var(--toxin);
-  color: var(--frost);
-  box-shadow: var(--glow-weak);
-}
-
-.action-button:active {
-  background: var(--dungeon);
-}
-
-.action-button:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-  box-shadow: none;
-}
-
-/* ── More button (secondary actions toggle) ──────────────────────────────── */
-
-.btn-more {
-  background: var(--cobble);
-  color: var(--iron);
-  border: 1px solid var(--ash);
-  padding: 4px 8px;
-  font-size: 0.8rem;
-  font-weight: 700;
-  cursor: pointer;
-  letter-spacing: 0.1em;
-  line-height: 1;
-  min-width: 28px;
-  text-align: center;
-}
-
-.btn-more:hover {
-  border-color: var(--toxin);
-  color: var(--frost);
 }
 
 /* ── Secondary actions (hidden by default) ───────────────────────────────── */
@@ -817,77 +577,22 @@ button:disabled {
   line-height: 1.2;
 }
 
-/* ── Toast notification ───────────────────────────────────────────────────── */
+/* ── Toast notification (DaisyUI toast + alert) ──────────────────────────── */
 
-.toast {
-  position: fixed;
-  bottom: 20px;
-  right: 20px;
+/* Override DaisyUI toast to allow pointer events and keep our animations */
+.toast.toast-end {
   z-index: 100;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
   pointer-events: none;
 }
 
-/* Base toast styles — animations defined in micro-interactions section below */
 .toast-item {
-  background: var(--stone);
-  border: 1px solid var(--danger);
-  padding: 10px 16px;
-  font-size: 0.78rem;
-  color: var(--frost);
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
   pointer-events: auto;
   max-width: 360px;
 }
 
-.toast-item.toast-success {
-  border-color: var(--ok);
-}
+/* ── Loading skeleton (DaisyUI skeleton component) ───────────────────────── */
 
-.toast-item.toast-warn {
-  border-color: var(--warn);
-}
-
-/* ── Loading skeleton ─────────────────────────────────────────────────────── */
-
-.skeleton {
-  background: linear-gradient(
-    90deg,
-    var(--stone) 25%,
-    var(--cobble) 50%,
-    var(--stone) 75%
-  );
-  background-size: 200% 100%;
-  animation: shimmer 1.5s infinite;
-  height: 1em;
-}
-
-@keyframes shimmer {
-  0%   { background-position: 200% 0; }
-  100% { background-position: -200% 0; }
-}
-
-/* ── Accent button ────────────────────────────────────────────────────────── */
-
-.btn-accent {
-  background: var(--mold);
-  color: var(--plague);
-  border: 1px solid var(--ooze);
-  font-weight: 600;
-  letter-spacing: 0.04em;
-}
-
-.btn-accent:hover {
-  border-color: var(--toxin);
-  box-shadow: var(--glow-weak);
-}
-
-.btn-accent:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
-}
+/* ── Accent button (now uses DaisyUI btn-accent) ─────────────────────────── */
 
 /* ── Create issue form ────────────────────────────────────────────────────── */
 
@@ -921,17 +626,6 @@ button:disabled {
   text-transform: none;
   letter-spacing: normal;
   color: var(--ash);
-}
-
-.form-group input,
-.form-group textarea {
-  width: 100%;
-  background: var(--abyss);
-  color: var(--bone);
-  border: 1px solid var(--ash);
-  padding: 6px 10px;
-  font-size: 0.78rem;
-  font-family: inherit;
 }
 
 .form-group textarea {
@@ -985,22 +679,7 @@ button:disabled {
   line-height: 1.5;
 }
 
-/* ── Blocked-by indicator ─────────────────────────────────────────────────── */
-
-.blocked-by {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  font-size: 0.68rem;
-  color: var(--danger);
-  padding: 2px 8px;
-  border: 1px solid rgba(251, 113, 133, 0.3);
-}
-
-.blocked-by::before {
-  content: "⛓";
-  font-size: 0.6rem;
-}
+/* ── Blocked-by indicator (now uses DaisyUI badge-error) ─────────────────── */
 
 /* ── Note/comment input ───────────────────────────────────────────────────── */
 
@@ -1012,15 +691,6 @@ button:disabled {
 
 .note-form input {
   flex: 1;
-  background: var(--abyss);
-  color: var(--bone);
-  border: 1px solid var(--ash);
-  padding: 4px 8px;
-  font-size: 0.72rem;
-}
-
-.note-form input::placeholder {
-  color: var(--ash);
 }
 
 /* ── Session/pipeline detail panel ────────────────────────────────────────── */
@@ -1119,16 +789,7 @@ button:disabled {
   color: var(--danger);
 }
 
-.btn-danger {
-  background: rgba(251, 113, 133, 0.15);
-  color: var(--danger);
-  border: 1px solid var(--danger);
-  font-weight: 600;
-}
-
-.btn-danger:hover {
-  background: rgba(251, 113, 133, 0.25);
-}
+/* btn-danger now uses DaisyUI btn-error */
 
 /* ── Concurrency inline control ───────────────────────────────────────────── */
 
@@ -1421,16 +1082,14 @@ button:disabled {
   animation: toast-slide-in 250ms cubic-bezier(0.16, 1, 0.3, 1);
   position: relative;
   overflow: hidden;
-  border-left: 3px solid transparent;
 }
 
-.toast-item.toast-success {
-  border-left-color: var(--ok);
+.toast-item.alert-success {
   animation: toast-slide-in 250ms cubic-bezier(0.16, 1, 0.3, 1),
              toast-success-flash 600ms ease-out 250ms;
 }
 
-.toast-item:not(.toast-success):not(.toast-warn) {
+.toast-item.alert-error {
   animation: toast-slide-in 250ms cubic-bezier(0.16, 1, 0.3, 1),
              toast-error-shake 400ms ease-out 250ms;
 }
@@ -1450,9 +1109,9 @@ button:disabled {
   animation: toast-countdown var(--toast-duration, 4s) linear forwards;
 }
 
-.toast-success .toast-countdown { background: var(--ok); }
-.toast-warn .toast-countdown { background: var(--warn); }
-.toast-item:not(.toast-success):not(.toast-warn) .toast-countdown { background: var(--danger); }
+.alert-success .toast-countdown { background: var(--ok); }
+.alert-warning .toast-countdown { background: var(--warn); }
+.alert-error .toast-countdown { background: var(--danger); }
 
 /* ── 2. Issue card animation classes ─────────────────────────────────────────── */
 
@@ -1484,21 +1143,13 @@ button:disabled {
 
 /* ── 4. Button feedback ──────────────────────────────────────────────────────── */
 
-.action-button {
-  transition: border-color 150ms, color 150ms, box-shadow 150ms, transform 100ms cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-.action-button:active:not(:disabled) {
-  transform: scale(0.95);
-}
-
-.action-button.btn-success-flash {
+.btn.btn-success-flash {
   animation: issue-border-flash 400ms ease-out;
   --flash-color: var(--ok);
   border-color: var(--ok);
 }
 
-.action-button.is-loading::before {
+.btn.is-loading::before {
   content: "";
   display: inline-block;
   width: 10px;
@@ -1565,18 +1216,6 @@ button:disabled {
   padding: 12px;
 }
 
-.session-loading-skeleton .skeleton-line {
-  height: 12px;
-  background: linear-gradient(90deg, var(--stone) 25%, var(--cobble) 50%, var(--stone) 75%);
-  background-size: 200% 100%;
-  animation: skeleton-shimmer 1.5s infinite;
-}
-
-.session-loading-skeleton .skeleton-line:nth-child(1) { width: 60%; }
-.session-loading-skeleton .skeleton-line:nth-child(2) { width: 85%; }
-.session-loading-skeleton .skeleton-line:nth-child(3) { width: 45%; }
-.session-loading-skeleton .skeleton-line:nth-child(4) { width: 70%; }
-
 .pipeline-step.animate-step {
   animation: step-stagger-in 200ms cubic-bezier(0.16, 1, 0.3, 1) both;
 }
@@ -1638,34 +1277,7 @@ button:disabled {
   }
 }
 
-/* ── View toggle ──────────────────────────────────────────────────────────── */
-
-.view-toggle {
-  display: inline-flex;
-  border: 1px solid var(--ash);
-}
-
-.view-toggle-btn {
-  padding: 4px 10px;
-  font-size: 0.72rem;
-  font-weight: 500;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  cursor: pointer;
-  background: var(--abyss);
-  color: var(--slate);
-  border: none;
-  transition: background 100ms, color 100ms;
-}
-
-.view-toggle-btn.active {
-  background: var(--cobble);
-  color: var(--frost);
-}
-
-.view-toggle-btn:hover:not(.active) {
-  background: var(--stone);
-}
+/* ── View toggle (replaced by DaisyUI tabs) ──────────────────────────────── */
 
 /* ── Kanban board ─────────────────────────────────────────────────────────── */
 
@@ -1895,7 +1507,7 @@ button:disabled {
   max-width: 340px;
 }
 
-.empty-overview .btn-accent {
+.empty-overview .btn.btn-accent {
   margin-top: 4px;
 }
 
@@ -1945,21 +1557,7 @@ button:disabled {
   color: var(--silver);
 }
 
-.empty-list .btn-clear-filters {
-  background: var(--cobble);
-  color: var(--slate);
-  border: 1px solid var(--ash);
-  font-size: 0.7rem;
-  padding: 4px 12px;
-  border-radius: 4px;
-  cursor: pointer;
-  transition: border-color 0.2s;
-}
-
-.empty-list .btn-clear-filters:hover {
-  border-color: var(--plague);
-  color: var(--frost);
-}
+/* btn-clear-filters now uses DaisyUI btn btn-sm btn-ghost */
 
 /* ── First-time "+ New" button highlight ─────────────────────────────────── */
 
@@ -2052,21 +1650,7 @@ button:disabled {
   font-size: 0.72rem;
 }
 
-.btn-close-detail {
-  margin-left: auto;
-  background: transparent;
-  border: 1px solid var(--ash);
-  color: var(--iron);
-  font-size: 1rem;
-  line-height: 1;
-  padding: 2px 6px;
-  cursor: pointer;
-}
-
-.btn-close-detail:hover {
-  color: var(--frost);
-  border-color: var(--toxin);
-}
+/* btn-close-detail now uses DaisyUI btn btn-xs btn-ghost */
 
 .detail-panel .session-panel {
   margin-top: 0;
@@ -2236,16 +1820,14 @@ button:disabled {
 
 @media (max-width: 899px) {
 
-  /* ── Tabs on mobile ─────────────────────────────────────────────────── */
+  /* ── Tabs on mobile (DaisyUI tabs) ─────────────────────────────────── */
 
-  .tab-nav {
+  .tabs {
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
   }
 
-  .tab-btn {
-    padding: 10px 14px;
-    font-size: 0.72rem;
+  .tab {
     white-space: nowrap;
     min-height: 44px;
   }
@@ -2307,33 +1889,33 @@ button:disabled {
   }
 
   /* Make "+ New" prominent on mobile */
-  .toolbar-right .btn-accent {
+  .toolbar-right .btn.btn-accent {
     font-size: 0.88rem;
     padding: 10px;
   }
 
-  /* ── KPI grid ──────────────────────────────────────────────────────────── */
+  /* ── KPI grid (DaisyUI stats) ──────────────────────────────────────────── */
 
   .grid {
     grid-template-columns: repeat(2, 1fr);
   }
 
-  .kpi {
+  .stat {
     padding: 12px 8px;
     min-height: 0;
     overflow: hidden;
   }
 
-  .kpi .value {
-    font-size: 1.5rem;
+  .stat .stat-value {
+    font-size: 1.5rem !important;
   }
 
-  .kpi .label {
+  .stat .stat-title {
     font-size: 0.6rem;
     word-break: break-word;
   }
 
-  .kpi .desc {
+  .stat .stat-desc {
     font-size: 0.6rem;
     word-break: break-word;
   }
@@ -2377,20 +1959,10 @@ button:disabled {
     flex-direction: column;
   }
 
-  .actions .action-button {
+  .actions .btn {
     width: 100%;
     text-align: center;
     min-height: 44px;
-    padding: 10px;
-    font-size: 0.76rem;
-  }
-
-  .actions .btn-more {
-    width: 100%;
-    text-align: center;
-    min-height: 44px;
-    padding: 10px;
-    font-size: 0.88rem;
   }
 
   /* 3. Secondary actions: full-width stacked column */
@@ -2399,7 +1971,7 @@ button:disabled {
     flex-direction: column;
   }
 
-  .actions-secondary .action-button {
+  .actions-secondary .btn {
     width: 100%;
     text-align: center;
   }
@@ -2412,11 +1984,10 @@ button:disabled {
     align-items: stretch;
   }
 
-  .issue-count .action-button {
+  .issue-count .btn {
     width: 100%;
     min-height: 44px;
     text-align: center;
-    padding: 10px;
   }
 
   /* ── 4. Note form: send button full-width ──────────────────────────── */
@@ -2429,7 +2000,7 @@ button:disabled {
     min-height: 44px;
   }
 
-  .note-form .action-button {
+  .note-form .btn {
     width: 100%;
     min-height: 44px;
     text-align: center;
@@ -2445,7 +2016,7 @@ button:disabled {
     flex-direction: column;
   }
 
-  .split-form-actions .action-button {
+  .split-form-actions .btn {
     width: 100%;
     min-height: 44px;
     text-align: center;
@@ -2469,8 +2040,7 @@ button:disabled {
     flex-direction: column;
   }
 
-  .create-form-actions button,
-  .create-form-actions .action-button {
+  .create-form-actions .btn {
     width: 100%;
     min-height: 44px;
     text-align: center;
@@ -2492,8 +2062,7 @@ button:disabled {
     align-items: stretch;
   }
 
-  .delete-confirm button,
-  .delete-confirm .action-button {
+  .delete-confirm .btn {
     width: 100%;
     min-height: 44px;
     text-align: center;
@@ -2551,13 +2120,11 @@ button:disabled {
     overflow-wrap: break-word;
   }
 
-  /* ── 19. Toast: bottom-center on mobile with safe margin ───────────── */
+  /* ── 19. Toast: wider on mobile ─────────────────────────────────────── */
 
-  .toast {
-    bottom: 24px;
-    right: 10px;
+  .toast.toast-end {
     left: 10px;
-    align-items: stretch;
+    right: 10px;
   }
 
   .toast-item {
