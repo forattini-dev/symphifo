@@ -9,6 +9,7 @@
   },
   "scripts": {
     "start": "node ./bin/symphifo.js",
+    "dev": "node ./bin/symphifo.js --port 4000",
     "mcp": "node ./bin/symphifo.js mcp"
   },
   "files": [
