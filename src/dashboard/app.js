@@ -2263,15 +2263,20 @@ function applyWsStateUpdate(msg) {
 }
 
 function resolveWebSocketPort() {
-  return Number.parseInt(location.port || (location.protocol === "https:" ? "443" : "80"), 10);
+  // WebSocket runs on API port + 1 (separate s3db WebSocketPlugin)
+  if (typeof websocketPort === "number" && Number.isFinite(websocketPort) && websocketPort > 0) {
+    return websocketPort;
+  }
+  const apiPort = Number.parseInt(location.port || (location.protocol === "https:" ? "443" : "80"), 10);
+  return apiPort + 1;
 }
 
 function resolveWebSocketCandidates() {
   const protocol = location.protocol === "https:" ? "wss:" : "ws:";
   const host = location.hostname;
   const port = resolveWebSocketPort();
-  // Same port, /ws path — matches ApiPlugin listeners[].protocols.websocket.path
-  return [`${protocol}//${host}:${port}/ws`];
+  // s3db WebSocketPlugin runs on separate port, root path
+  return [`${protocol}//${host}:${port}/`];
 }
 
 function connectWebSocketUrl() {

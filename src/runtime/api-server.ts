@@ -49,7 +49,8 @@ export async function startApiServer(
     throw new Error("Cannot start API plugin before the database is initialized.");
   }
 
-  const { ApiPlugin } = await loadS3dbModule();
+  const s3dbModule = await loadS3dbModule();
+  const { ApiPlugin } = s3dbModule;
   const fallbackHtml = `<!doctype html><html><body><pre>Unable to load Symphifo dashboard assets.</pre></body></html>`;
   const eventResource = getEventStateResource();
 
@@ -102,42 +103,12 @@ export async function startApiServer(
 
   setApiRuntimeContext(state, workflowDefinition);
 
+  const websocketPort = port + 1;
+
   const apiPlugin = new ApiPlugin({
     port,
     host: "0.0.0.0",
     versionPrefix: false,
-    listeners: [{
-      bind: { host: "0.0.0.0", port },
-      protocols: {
-        http: true,
-        websocket: {
-          enabled: true,
-          path: "/ws",
-          maxPayloadBytes: 512_000,
-          onConnection: (socket: WsClient) => {
-            wsClients.add(socket);
-            socket.send(JSON.stringify({
-              type: "connected",
-              timestamp: now(),
-              metrics: computeMetrics(state.issues),
-              capabilities: computeCapabilityCounts(state.issues),
-              issues: state.issues,
-              events: state.events.slice(0, 50),
-            }));
-          },
-          onMessage: (socket: WsClient, message: string | Buffer) => {
-            try {
-              const msg = JSON.parse(typeof message === "string" ? message : message.toString("utf8"));
-              if (msg.type === "ping") {
-                socket.send(JSON.stringify({ type: "pong", timestamp: now() }));
-              }
-            } catch {}
-          },
-          onClose: (socket: WsClient) => { wsClients.delete(socket); },
-          onError: () => {},
-        },
-      },
-    }],
     rootRoute: (c: any) => c.html(readTextOrNull(FRONTEND_INDEX) || fallbackHtml),
     static: [{
       driver: "filesystem",
@@ -159,6 +130,7 @@ export async function startApiServer(
         c.json({
           ...state,
           capabilities: computeCapabilityCounts(state.issues),
+          websocketPort,
         }),
       "GET /status": async (c: any) =>
         c.json({
@@ -207,8 +179,28 @@ export async function startApiServer(
 
   const plugin = await stateDb.usePlugin(apiPlugin, "api") as { stop?: () => Promise<void> };
   setActiveApiPlugin(plugin);
+
+  // Start WebSocket server on port+1 for realtime dashboard updates
+  const WebSocketPlugin = s3dbModule.WebSocketPlugin;
+  if (WebSocketPlugin) {
+    try {
+      const wsPlugin = new WebSocketPlugin({
+        port: websocketPort,
+        host: "0.0.0.0",
+        health: { enabled: false },
+        startupBanner: false,
+      }) as { stop?: () => Promise<void>; broadcast?: (msg: unknown) => void };
+      await stateDb.usePlugin(wsPlugin, "websocket");
+      setWebSocketBroadcastPlugin(wsPlugin as BroadcastPlugin);
+      logger.info(`WebSocket available at ws://localhost:${websocketPort}`);
+    } catch (error) {
+      logger.warn(`WebSocket plugin failed: ${String(error)}`);
+    }
+  } else {
+    logger.warn("WebSocket plugin not available in this s3db version.");
+  }
+
   logger.info(`Local dashboard available at http://localhost:${port}`);
-  logger.info(`WebSocket available at ws://localhost:${port}/ws`);
   logger.info(`State API: http://localhost:${port}/state`);
   logger.info(`OpenAPI docs available at http://localhost:${port}/docs`);
 }
