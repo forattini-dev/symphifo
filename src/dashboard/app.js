@@ -818,7 +818,7 @@ async function submitSplit(issueId, target) {
       }
       activeSplitId = null;
       showToast(`Created ${created.length} sub-tasks: ${created.join(", ")}`, "success");
-      await loadState();
+      await syncAfterAction();
     } catch (error) {
       showToast(`Split failed: ${error.message}`);
     }
@@ -840,7 +840,7 @@ async function addNote(issueId, target) {
       await post(`/issues/${encodeURIComponent(issueId)}/state`, { state: currentState, reason: note });
       input.value = "";
       showToast("Note added", "success", 2000);
-      await loadState();
+      await syncAfterAction();
     } catch (error) {
       showToast(`Note failed: ${error.message}`);
     }
@@ -875,7 +875,7 @@ function renderRuntimeMeta(state) {
       try {
         await post("/config/concurrency", { concurrency: num });
         showToast(`Concurrency set to ${num}`, "success");
-        await loadState();
+        await syncAfterAction();
       } catch (err) { showToast(err.message); }
     });
   });
@@ -958,24 +958,30 @@ function renderEvents(events = []) {
 
 // ── State Management ─────────────────────────────────────────────────────────
 
+// If WS connected, skip loadState — the push will bring the update.
+// If polling, do loadState to get immediate feedback.
+async function syncAfterAction() {
+  if (!wsConnected) await loadState();
+}
+
 async function setIssueState(issueId, nextState, target) {
   await withLoading(target, async () => {
-      await post(`/issues/${encodeURIComponent(issueId)}/state`, { state: nextState });
-    await loadState();
+    await post(`/issues/${encodeURIComponent(issueId)}/state`, { state: nextState });
+    await syncAfterAction();
   });
 }
 
 async function retryIssue(issueId, target) {
   await withLoading(target, async () => {
     await post(`/issues/${encodeURIComponent(issueId)}/retry`);
-    await loadState();
+    await syncAfterAction();
   });
 }
 
 async function cancelIssue(issueId, target) {
   await withLoading(target, async () => {
     await post(`/issues/${encodeURIComponent(issueId)}/cancel`);
-    await loadState();
+    await syncAfterAction();
   });
 }
 
@@ -1010,7 +1016,7 @@ async function submitCreateForm(target) {
       document.getElementById("cf-attempts").value = "3";
       document.getElementById("cf-labels").value = "";
       document.getElementById("cf-paths").value = "";
-      await loadState();
+      await syncAfterAction();
     } catch (error) {
       showToast(`Create failed: ${error.message}`);
     }
@@ -1092,7 +1098,7 @@ async function submitEdit(issueId, target) {
       if (!response.ok) throw new Error(`Failed: ${response.status}`);
       activeEditId = null;
       showToast("Issue updated", "success");
-      await loadState();
+      await syncAfterAction();
     } catch (e) {
       showToast(`Edit failed: ${e.message}`);
     }
@@ -1113,7 +1119,7 @@ async function confirmDelete(issueId, target) {
       pendingDeleteId = null;
       if (selectedDetailId === issueId) clearDetailPanel();
       showToast(`Deleted ${issue?.identifier || issueId}`, "success");
-      await loadState();
+      await syncAfterAction();
     } catch (e) {
       pendingDeleteId = null;
       showToast(`Delete failed: ${e.message}`);
@@ -1207,7 +1213,7 @@ function wireActions() {
       }
       selectedIssues.clear();
       showToast(`Retried ${ids.length} issues`, "success");
-      await loadState();
+      await syncAfterAction();
     } else if (target.id === "batch-cancel") {
       const ids = [...selectedIssues];
       for (const id of ids) {
@@ -1215,7 +1221,7 @@ function wireActions() {
       }
       selectedIssues.clear();
       showToast(`Cancelled ${ids.length} issues`, "success");
-      await loadState();
+      await syncAfterAction();
     } else if (target.id === "batch-clear") {
       selectedIssues.clear();
       renderIssues(appState.issues || []);
@@ -1492,14 +1498,39 @@ let wsConnected = false;
 let wsReconnectTimer = null;
 let pollingTimer = null;
 
+function detectStateTransitions(oldIssues, newIssues) {
+  if (!oldIssues?.length || !newIssues?.length) return;
+  const oldMap = new Map(oldIssues.map((i) => [i.id, i.state]));
+  for (const issue of newIssues) {
+    const prev = oldMap.get(issue.id);
+    if (!prev || prev === issue.state) continue;
+    // Notify on important transitions
+    if (issue.state === "Blocked") {
+      showToast(`${issue.identifier} blocked${issue.lastError ? ": " + issue.lastError.slice(0, 80) : ""}`, "warn", 6000);
+    } else if (issue.state === "Done") {
+      const dur = issue.durationMs ? ` (${formatDuration(issue.durationMs)})` : "";
+      showToast(`${issue.identifier} completed${dur}`, "success", 5000);
+    } else if (issue.state === "Cancelled") {
+      showToast(`${issue.identifier} cancelled`, "warn", 3000);
+    } else if (issue.state === "In Progress" && prev === "Todo") {
+      showToast(`${issue.identifier} started`, "success", 2000);
+    }
+  }
+}
+
 function applyWsStateUpdate(msg) {
   if (!msg) return;
+
+  const prevIssues = appState.issues;
 
   // Update app state from WS push
   if (msg.issues) appState.issues = msg.issues;
   if (msg.metrics) appState.metrics = msg.metrics;
   if (msg.capabilities) appState.capabilities = msg.capabilities;
   if (msg.updatedAt) appState.updatedAt = msg.updatedAt;
+
+  // Detect transitions and notify
+  if (msg.issues) detectStateTransitions(prevIssues, msg.issues);
 
   // Render
   const issues = appState.issues || [];
@@ -1527,7 +1558,15 @@ function applyWsStateUpdate(msg) {
     eventIssueFilter.value = options.some((entry) => entry.value === previousValue) ? previousValue : "all";
   }
 
-  refreshBadge.textContent = `ws: ${new Date().toLocaleTimeString()}`;
+  // Auto-refresh detail panel if open
+  if (selectedDetailId && isDesktop() && msg.issues) {
+    const issue = msg.issues.find((i) => i.id === selectedDetailId);
+    if (issue && (issue.state === "In Progress" || issue.state === "In Review")) {
+      loadSessionsForPanel(selectedDetailId, "detail-session-panel");
+    }
+  }
+
+  refreshBadge.textContent = `realtime: ${new Date().toLocaleTimeString()}`;
 }
 
 function connectWebSocket() {
@@ -1544,10 +1583,10 @@ function connectWebSocket() {
   ws.onopen = () => {
     wsConnected = true;
     stopPollingFallback();
-    healthBadge.textContent = "status: connected";
+    healthBadge.textContent = "realtime";
     healthBadge.className = "badge badge-health-ok";
-    if (lastHealthStatus === "offline") {
-      showToast("Connected via WebSocket", "success", 2000);
+    if (lastHealthStatus === "offline" || lastHealthStatus === "polling") {
+      showToast("Connected — realtime updates active", "success", 2000);
     }
     lastHealthStatus = "ok";
   };
@@ -1570,14 +1609,28 @@ function connectWebSocket() {
       if (msg.type === "pong") {
         // heartbeat acknowledged
       }
+
+      if (msg.type === "agent:output" && msg.issueId) {
+        // Live agent output streaming
+        const panel = document.getElementById(`session-${msg.issueId}`) || document.getElementById("detail-session-panel");
+        if (panel) {
+          const outputEl = panel.querySelector(".session-output:last-child") || panel;
+          const line = document.createElement("div");
+          line.className = "session-output";
+          line.textContent = msg.output || "";
+          outputEl.after(line);
+          line.scrollIntoView({ block: "nearest" });
+        }
+      }
     } catch {}
   };
 
   ws.onclose = () => {
     wsConnected = false;
     ws = null;
-    healthBadge.textContent = "status: reconnecting";
+    healthBadge.textContent = "reconnecting";
     healthBadge.className = "badge badge-health-warn";
+    lastHealthStatus = "offline";
 
     // Reconnect with backoff
     clearTimeout(wsReconnectTimer);
@@ -1596,9 +1649,11 @@ function connectWebSocket() {
 
 function startPollingFallback() {
   if (pollingTimer) return;
+  lastHealthStatus = "polling";
+  healthBadge.textContent = "polling";
+  healthBadge.className = "badge badge-health-warn";
   pollingTimer = setInterval(() => {
     refresh();
-    loadHealth();
   }, 3000);
 }
 
