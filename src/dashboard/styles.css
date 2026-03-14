@@ -804,6 +804,19 @@ button:disabled {
 .event-progress { border-left-color: var(--warn); }
 .event-info     { border-left-color: var(--iron); }
 
+.event-dedup-count {
+  display: inline-block;
+  font-family: monospace;
+  font-size: 0.7rem;
+  padding: 1px 5px;
+  margin-left: 6px;
+  border-radius: 3px;
+  background: var(--ash);
+  color: var(--frost);
+  vertical-align: middle;
+  line-height: 1.2;
+}
+
 /* ── Toast notification ───────────────────────────────────────────────────── */
 
 .toast {

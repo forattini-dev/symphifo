@@ -396,6 +396,20 @@ function capabilityRank(value) {
   return index === -1 ? 999 : index;
 }
 
+function updateTabBadges() {
+  const issues = appState.issues || [];
+  const issueCount = issues.length;
+  const eventCount = allEvents.length;
+
+  document.querySelectorAll(".tab-btn").forEach((btn) => {
+    const tab = btn.dataset.tab;
+    if (tab === "board") btn.textContent = issueCount > 0 ? `Board (${issueCount})` : "Board";
+    else if (tab === "list") btn.textContent = issueCount > 0 ? `List (${issueCount})` : "List";
+    else if (tab === "events") btn.textContent = eventCount > 0 ? `Events (${eventCount})` : "Events";
+    // runtime: no counter
+  });
+}
+
 function updateTabTitle(metrics) {
   if (!metrics) return;
   const parts = [];
@@ -476,6 +490,9 @@ function renderOverview(metrics, issues = []) {
 
   // Animate KPI counters
   animateKpiValues();
+
+  // Update tab badges with current counts
+  updateTabBadges();
 
   // Progress bar
   if (total > 0) {
@@ -1352,20 +1369,39 @@ function renderEvents(events = []) {
     return;
   }
 
+  // Group consecutive events with identical messages
+  const displayItems = filtered.slice(0, 80);
+  const grouped = [];
+  for (const event of displayItems) {
+    const prev = grouped.length ? grouped[grouped.length - 1] : null;
+    if (prev && prev.event.message === event.message) {
+      prev.count++;
+      // Keep the most recent timestamp (first in list since sorted newest-first)
+    } else {
+      grouped.push({ event, count: 1 });
+    }
+  }
+
   const hadEvents = eventsEl.children.length > 0;
   const isNewPush = events.length > 0;
-  eventsEl.innerHTML = filtered
-    .slice(0, 80)
-    .map((event, idx) => `
+  eventsEl.innerHTML = grouped
+    .map((item, idx) => {
+      const event = item.event;
+      const countBadge = item.count > 1 ? ` <span class="event-dedup-count">\u00d7${item.count}</span>` : "";
+      return `
       <div class="event event-${event.kind || "info"}${isNewPush && idx < events.length ? " animate-in" : ""}"${isNewPush && idx < events.length ? ` style="animation-delay:${idx * 30}ms"` : ""}>
         <div class="mono" title="${escapeHtml(formatDate(event.at))}">${timeAgo(event.at)} ${escapeHtml(event.issueId || "system")}</div>
-        <div>${escapeHtml(event.message || "")}</div>
+        <div>${escapeHtml(event.message || "")}${countBadge}</div>
       </div>
-    `)
+    `;
+    })
     .join("");
 
   // Auto-scroll to top when new events arrive
   if (events.length && hadEvents) eventsEl.scrollTop = 0;
+
+  // Keep Events tab badge in sync
+  updateTabBadges();
 }
 
 // ── State Management ─────────────────────────────────────────────────────────
@@ -1672,6 +1708,13 @@ function wireActions() {
 
   rerunBtn?.addEventListener("click", async () => {
     try { await post("/refresh", {}); } catch {}
+    // Reset WS reconnect state and retry
+    wsReconnectCount = 0;
+    clearTimeout(wsReconnectTimer);
+    if (!wsConnected) {
+      stopPollingFallback();
+      connectWebSocket();
+    }
     await loadState();
   });
   clearEventsBtn?.addEventListener("click", () => {
@@ -1948,6 +1991,7 @@ document.addEventListener("keydown", (event) => {
 let ws = null;
 let wsConnected = false;
 let wsReconnectTimer = null;
+let wsReconnectCount = 0;
 let pollingTimer = null;
 
 function detectStateTransitions(oldIssues, newIssues) {
@@ -1998,6 +2042,9 @@ function applyWsStateUpdate(msg) {
     renderEvents(msg.events);
   }
 
+  // Update tab badges after state/events update
+  updateTabBadges();
+
   // Update event issue filter
   if (eventIssueFilter && issues.length) {
     const previousValue = eventIssueFilter.value || "all";
@@ -2038,6 +2085,7 @@ function connectWebSocket() {
 
   ws.onopen = () => {
     wsConnected = true;
+    wsReconnectCount = 0;
     stopPollingFallback();
     healthBadge.textContent = "realtime";
     healthBadge.className = "badge badge-health-ok";
@@ -2084,18 +2132,26 @@ function connectWebSocket() {
   ws.onclose = () => {
     wsConnected = false;
     ws = null;
-    healthBadge.textContent = "reconnecting";
-    healthBadge.className = "badge badge-reconnecting";
-    lastHealthStatus = "offline";
+    wsReconnectCount++;
 
-    // Reconnect with backoff
-    clearTimeout(wsReconnectTimer);
-    wsReconnectTimer = setTimeout(() => {
-      connectWebSocket();
-    }, 3000);
+    if (wsReconnectCount >= 3) {
+      // Give up on WS, fall back to polling permanently (until user clicks Reload)
+      startPollingFallback();
+      lastHealthStatus = "polling";
+    } else {
+      healthBadge.textContent = "reconnecting";
+      healthBadge.className = "badge badge-reconnecting";
+      lastHealthStatus = "offline";
 
-    // Start polling as fallback while disconnected
-    startPollingFallback();
+      // Reconnect with backoff
+      clearTimeout(wsReconnectTimer);
+      wsReconnectTimer = setTimeout(() => {
+        connectWebSocket();
+      }, 3000);
+
+      // Start polling as fallback while disconnected
+      startPollingFallback();
+    }
   };
 
   ws.onerror = () => {
@@ -2126,6 +2182,9 @@ wireActions();
 
 // Apply initial tab from localStorage
 switchTab(viewMode);
+
+// Ensure create form stays hidden on boot (switchTab reveals the board panel but form must remain hidden)
+if (createForm) createForm.hidden = true;
 
 loadHealth();
 refresh();
