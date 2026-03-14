@@ -242,6 +242,21 @@ function isDesktop() {
   return window.matchMedia("(min-width: 900px)").matches;
 }
 
+// ── First-time "+ New" button highlight ──────────────────────────────────────
+
+function updateNewButtonHighlight(issueCount) {
+  if (!newIssueBtn) return;
+  const hasCreated = localStorage.getItem("symphifo-has-created") === "1";
+  if (issueCount === 0 && !hasCreated) {
+    newIssueBtn.classList.add("btn-highlight");
+  } else {
+    newIssueBtn.classList.remove("btn-highlight");
+    if (issueCount > 0 && !hasCreated) {
+      localStorage.setItem("symphifo-has-created", "1");
+    }
+  }
+}
+
 // ── KPI counter animation ───────────────────────────────────────────────────
 
 function animateCounter(element, from, to, durationMs = 400) {
@@ -430,13 +445,18 @@ function renderOverview(metrics, issues = []) {
 
   if (total === 0) {
     overviewEl.innerHTML = `
-      <div class="kpi" style="grid-column: 1 / -1; padding: 24px;">
-        <p class="label empty-state-text">No Issues</p>
-        <p class="empty-state-plus">+</p>
-        <p class="value" style="font-size: 1.2rem;">Create your first issue to get started</p>
-        <p class="desc">Use the "+ New" button above or POST to /issues</p>
+      <div class="empty-overview">
+        <div class="empty-overview-title">Ready to orchestrate</div>
+        <div class="empty-overview-desc">Create issues and let your agents handle the work.</div>
+        <button class="btn-accent" id="empty-create-btn">Create first issue</button>
+        <div class="empty-overview-hint">or POST to /issues via API</div>
       </div>
     `;
+    document.getElementById("empty-create-btn")?.addEventListener("click", () => {
+      switchTab("board");
+      toggleCreateForm();
+    });
+    updateNewButtonHighlight(0);
     const existing = document.getElementById("progress-bar");
     if (existing) existing.remove();
     return;
@@ -490,6 +510,9 @@ function renderOverview(metrics, issues = []) {
 
   // Animate KPI counters
   animateKpiValues();
+
+  // Update first-time highlight
+  updateNewButtonHighlight(total);
 
   // Update tab badges with current counts
   updateTabBadges();
@@ -641,7 +664,29 @@ function renderIssues(issues = []) {
   }
 
   if (!filtered.length) {
-    issueListEl.innerHTML = '<p class="muted">No issues match this filter.</p>';
+    const hasAnyIssues = issues.length > 0;
+    if (hasAnyIssues) {
+      issueListEl.innerHTML = `<div class="empty-list">
+        <div class="empty-list-text">No issues match -- try adjusting filters</div>
+        <button class="btn-clear-filters" id="clear-filters-btn">Clear filters</button>
+      </div>`;
+      document.getElementById("clear-filters-btn")?.addEventListener("click", () => {
+        stateFilter.value = "all";
+        if (categoryFilter) categoryFilter.value = "all";
+        queryInput.value = "";
+        activeKpiFilter = null;
+        renderOverview(appState.metrics || {}, appState.issues || []);
+        renderIssues(appState.issues || []);
+      });
+    } else {
+      issueListEl.innerHTML = `<div class="empty-list">
+        <div class="kanban-empty-cta" id="list-create-cta">
+          <div class="kanban-empty-icon">+</div>
+          <div>Create an issue to start</div>
+        </div>
+      </div>`;
+      document.getElementById("list-create-cta")?.addEventListener("click", () => toggleCreateForm());
+    }
     return;
   }
 
@@ -818,6 +863,23 @@ function renderKanban(issues = []) {
 
   kanbanBoard.innerHTML = columns.map((state) => {
     const cards = grouped[state];
+    const emptyMessages = {
+      "Todo": null, // special CTA
+      "In Progress": "Issues move here when agents start working",
+      "In Review": "Completed work awaiting review",
+      "Blocked": "Issues that need attention",
+      "Done": "Completed issues appear here",
+      "Cancelled": "Cancelled issues",
+    };
+    let emptyHtml;
+    if (!cards.length && state === "Todo") {
+      emptyHtml = `<div class="kanban-empty-cta" data-action="kanban-create-cta">
+        <div class="kanban-empty-icon">+</div>
+        <div>Create an issue to start</div>
+      </div>`;
+    } else if (!cards.length) {
+      emptyHtml = `<div class="kanban-empty">${emptyMessages[state] || "No issues"}</div>`;
+    }
     const cardsHtml = cards.length
       ? cards.map((issue) => {
           const isSelected = selectedDetailId === issue.id;
@@ -839,7 +901,7 @@ function renderKanban(issues = []) {
             </div>
           </div>`;
         }).join("")
-      : '<div class="kanban-empty">No issues</div>';
+      : emptyHtml;
 
     return `<div class="kanban-column" data-state="${escapeHtml(state)}">
       <div class="kanban-column-header">
@@ -936,6 +998,11 @@ function wireKanbanCardClicks() {
 
       renderKanban(appState.issues || []);
     });
+  });
+
+  // Wire kanban empty CTA click (Todo column)
+  kanbanBoard.querySelectorAll("[data-action='kanban-create-cta']").forEach((cta) => {
+    cta.addEventListener("click", () => toggleCreateForm());
   });
 
   // Wire quick action buttons on kanban cards
@@ -1350,7 +1417,10 @@ function renderEvents(events = []) {
   }
 
   if (!allEvents.length) {
-    eventsEl.innerHTML = '<p class="muted">No events yet.</p>';
+    eventsEl.innerHTML = `<div class="empty-events">
+      <div class="empty-events-title">No events yet</div>
+      <div class="empty-events-desc">Events appear here when agents run. Start by creating an issue.</div>
+    </div>`;
     return;
   }
 

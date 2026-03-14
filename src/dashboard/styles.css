@@ -1828,8 +1828,146 @@ button:disabled {
 .kanban-empty {
   text-align: center;
   padding: 24px 8px;
-  color: var(--iron);
+  color: var(--silver);
   font-size: 0.72rem;
+  line-height: 1.5;
+}
+
+/* Kanban empty CTA (Todo column) */
+.kanban-empty-cta {
+  text-align: center;
+  padding: 20px 12px;
+  border: 1px dashed var(--ash);
+  border-radius: 6px;
+  color: var(--silver);
+  font-size: 0.72rem;
+  cursor: pointer;
+  transition: border-color 0.2s, color 0.2s;
+}
+
+.kanban-empty-cta:hover {
+  border-color: var(--plague);
+  color: var(--slate);
+}
+
+.kanban-empty-icon {
+  font-size: 1.4rem;
+  font-weight: 800;
+  color: var(--iron);
+  animation: kanban-cta-pulse 2.5s ease-in-out infinite;
+  margin-bottom: 4px;
+}
+
+.kanban-empty-cta:hover .kanban-empty-icon {
+  color: var(--plague);
+}
+
+@keyframes kanban-cta-pulse {
+  0%, 100% { opacity: 0.5; transform: scale(1); }
+  50%      { opacity: 1;   transform: scale(1.15); }
+}
+
+/* ── Empty overview (onboarding) ─────────────────────────────────────────── */
+
+.empty-overview {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 36px 16px;
+  text-align: center;
+}
+
+.empty-overview-title {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--frost);
+  letter-spacing: 0.02em;
+}
+
+.empty-overview-desc {
+  font-size: 0.82rem;
+  color: var(--silver);
+  max-width: 340px;
+}
+
+.empty-overview .btn-accent {
+  margin-top: 4px;
+}
+
+.empty-overview-hint {
+  font-size: 0.66rem;
+  color: var(--iron);
+  margin-top: 2px;
+}
+
+/* ── Empty events tab ────────────────────────────────────────────────────── */
+
+.empty-events {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 32px 16px;
+  text-align: center;
+}
+
+.empty-events-title {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--slate);
+}
+
+.empty-events-desc {
+  font-size: 0.74rem;
+  color: var(--silver);
+  max-width: 300px;
+}
+
+/* ── Empty list view ─────────────────────────────────────────────────────── */
+
+.empty-list {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 28px 16px;
+  text-align: center;
+}
+
+.empty-list-text {
+  font-size: 0.78rem;
+  color: var(--silver);
+}
+
+.empty-list .btn-clear-filters {
+  background: var(--cobble);
+  color: var(--slate);
+  border: 1px solid var(--ash);
+  font-size: 0.7rem;
+  padding: 4px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: border-color 0.2s;
+}
+
+.empty-list .btn-clear-filters:hover {
+  border-color: var(--plague);
+  color: var(--frost);
+}
+
+/* ── First-time "+ New" button highlight ─────────────────────────────────── */
+
+.btn-highlight {
+  animation: btn-highlight-pulse 2s ease-in-out infinite;
+}
+
+@keyframes btn-highlight-pulse {
+  0%, 100% { box-shadow: none; }
+  50%      { box-shadow: 0 0 12px color-mix(in srgb, var(--plague) 40%, transparent); }
 }
 
 .kanban-card-header {
